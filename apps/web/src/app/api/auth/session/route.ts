@@ -9,7 +9,12 @@ export const dynamic = "force-dynamic";
 
 /** GET → who am I (401 when signed out). Also reports which sign-in methods are configured. */
 export async function GET(request: Request): Promise<Response> {
-  const methods = { google: googleConfig() !== null, whatsapp: Boolean(process.env.WHATSAPP_BOT_NUMBER), demo: process.env.DEMO_MODE === "true" && process.env.NODE_ENV !== "production" };
+  const methods = {
+    google: googleConfig() !== null, whatsapp: Boolean(process.env.WHATSAPP_BOT_NUMBER), demo: process.env.DEMO_MODE === "true" && process.env.NODE_ENV !== "production",
+    rewards: process.env.FEATURE_TOKEN_REWARDS === "true",
+    // The bot's public number (used by referral links to open WhatsApp with "JOIN <code>").
+    botNumber: (process.env.WHATSAPP_BOT_NUMBER ?? "").replace(/\D/g, "") || null,
+  };
   try {
     const actor = await requireActor(request);
     const user = await getDb().user.findUniqueOrThrow({ where: { id: actor.userId }, select: { name: true, role: true, phone: true, email: true, donorProfile: { select: { bloodGroup: true } } } });

@@ -12,6 +12,7 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
         <nav style={{ display: "flex", gap: 14, fontSize: 14, flexWrap: "wrap" }}>
           <a href="/request" style={nav}>Need blood</a>
           <a href="/donor" style={nav}>Donate</a>
+          <a href="/rewards" style={nav}>Rewards</a>
           <a href="/dashboard" style={nav}>Staff</a>
           <a href="/demo" style={nav}>WhatsApp inbox</a>
         </nav>
@@ -70,7 +71,7 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
   return data as T;
 }
 
-export interface Me { signedIn: boolean; user?: { id: string; name: string; role: string; verifiedStaff: boolean; hasPhone: boolean; email: string | null; isDonor: boolean }; methods: { google: boolean; whatsapp: boolean; demo: boolean } }
+export interface Me { signedIn: boolean; user?: { id: string; name: string; role: string; verifiedStaff: boolean; hasPhone: boolean; email: string | null; isDonor: boolean }; methods: { google: boolean; whatsapp: boolean; demo: boolean; rewards?: boolean; botNumber?: string | null } }
 
 export const GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] as const;
 export const COMPONENTS: Array<[string, string]> = [["PACKED_RED_CELLS", "Packed red cells"], ["PLATELETS", "Platelets"], ["WHOLE_BLOOD", "Whole blood"], ["PLASMA", "Plasma"]];

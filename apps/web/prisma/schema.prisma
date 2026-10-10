@@ -122,6 +122,12 @@ model User {
   notifications     Notification[]
   awards            RecognitionAward[]
   reminderLogs      ReminderLog[]
+  wallet            Wallet?
+  coinEntries       CoinEntry[]
+  referralCode      ReferralCode?
+  referralsMade     Referral[]        @relation("Referrer")
+  referredBy        Referral?         @relation("Referred")
+  redemptions       Redemption[]
 }
 
 model OAuthAccount {
@@ -401,4 +407,102 @@ model ReminderLog {
   createdAt      DateTime @default(now())
 
   @@unique([userId, dueAt])
+}
+
+// ---------------------------------------------------------------- rewards
+
+/** Balance is a column so redemptions can debit atomically (balance >= cost). */
+model Wallet {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+/** Append-only ledger. refKey makes every award/debit idempotent. */
+model CoinEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  reason    String
+  refKey    String   @unique
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model ReferralCode {
+  code      String   @id
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Referral {
+  id                 String    @id @default(cuid())
+  referrerId         String
+  referrer           User      @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId     String    @unique
+  referred           User      @relation("Referred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  createdAt          DateTime  @default(now())
+  donorRewardedAt    DateTime?
+  donationRewardedAt DateTime?
+
+  @@index([referrerId, createdAt])
+}
+
+model Sponsor {
+  id          String      @id @default(cuid())
+  name        String
+  website     String?
+  isSimulated Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  items       StoreItem[]
+}
+
+model StoreItem {
+  id           String       @id @default(cuid())
+  sponsorId    String
+  sponsor      Sponsor      @relation(fields: [sponsorId], references: [id])
+  title        String
+  description  String
+  costCoins    Int
+  perUserLimit Int          @default(1)
+  active       Boolean      @default(true)
+  isSimulated  Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  coupons      CouponCode[]
+  redemptions  Redemption[]
+}
+
+/** Sponsor-supplied codes; each is handed to exactly one redeemer. */
+model CouponCode {
+  id           String      @id @default(cuid())
+  itemId       String
+  item         StoreItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  code         String
+  redeemedById String?
+  redeemedAt   DateTime?
+  redemption   Redemption?
+
+  @@unique([itemId, code])
+  @@index([itemId, redeemedById])
+}
+
+model Redemption {
+  id             String     @id @default(cuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           StoreItem  @relation(fields: [itemId], references: [id])
+  couponId       String     @unique
+  coupon         CouponCode @relation(fields: [couponId], references: [id])
+  coins          Int
+  idempotencyKey String
+  createdAt      DateTime   @default(now())
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, itemId])
 }

@@ -18,7 +18,7 @@ const dir = await mkdtemp(join(tmpdir(), "raktdoot-e2e-"));
 const probe = createServer(); await new Promise((r) => probe.listen(0, "127.0.0.1", r));
 const port = probe.address().port; await new Promise((r) => probe.close(r));
 const base = `http://127.0.0.1:${port}`;
-const env = { ...process.env, DATABASE_URL: `file:${join(dir, "e2e.db").replaceAll("\\", "/")}`, DEMO_MODE: "true", APP_BASE_URL: base, SIMULATOR_ENABLED: "true", WHATSAPP_DELIVERY: "simulate", NEXT_TELEMETRY_DISABLED: "1" };
+const env = { ...process.env, DATABASE_URL: `file:${join(dir, "e2e.db").replaceAll("\\", "/")}`, DEMO_MODE: "true", APP_BASE_URL: base, SIMULATOR_ENABLED: "true", WHATSAPP_DELIVERY: "simulate", FEATURE_TOKEN_REWARDS: "true", NEXT_TELEMETRY_DISABLED: "1" };
 for (const k of ["WHATSAPP_PHONE_NUMBER_ID", "WHATSAPP_ACCESS_TOKEN", "GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GEMINI_API_KEY", "GROQ_API_KEY"]) delete env[k];
 const run = (args) => { const r = spawnSync(process.execPath, args, { env: { ...env, NODE_ENV: "test" }, stdio: "inherit" }); if (r.status !== 0) throw new Error(`setup failed: ${args[0]}`); };
 
@@ -46,17 +46,23 @@ try {
   }
   console.log(`Demo rehearsal against ${base}`);
 
+  // 0. A family member signs in and gets a referral link.
+  assert.equal((await call("family", "/api/auth/demo", { method: "POST", body: { userId: "demo-requester" } })).status, 200);
+  const refCode = (await call("family", "/api/rewards")).data.referral.code;
+  assert.match(refCode, /^[A-Z2-9]{8}$/);
+
   // 1. Donors sign up on WhatsApp (simulator = same bot code path as the real webhook).
-  for (const [phone, pin] of [["+919822200001", { lat: 18.5255, lng: 73.8556 }], ["+919822200002", { lat: 18.5302, lng: 73.8471 }]]) {
-    for (const msg of [{ text: "Hi" }, { buttonId: "lang:en" }, { buttonId: "terms:yes" }, { buttonId: "role:donate" }, { buttonId: "yes" }, { buttonId: "yes" }, { buttonId: "yes" }, { location: pin }, { text: "O-" }]) {
+  //    Donor 1 arrived through the family member's referral link ("JOIN <code>").
+  for (const [phone, pin, first] of [["+919822200001", { lat: 18.5255, lng: 73.8556 }, `JOIN ${refCode}`], ["+919822200002", { lat: 18.5302, lng: 73.8471 }, "Hi"]]) {
+    for (const msg of [{ text: first }, { buttonId: "lang:en" }, { buttonId: "terms:yes" }, { buttonId: "role:donate" }, { buttonId: "yes" }, { buttonId: "yes" }, { buttonId: "yes" }, { location: pin }, { text: "O-" }]) {
       const r = await call("sim", "/api/simulator", { method: "POST", body: { from: phone, ...msg } });
       assert.equal(r.status, 200, JSON.stringify(r.data));
     }
   }
-  step(1, "two donors signed up on WhatsApp with alerts + location consent");
+  assert.equal((await call("family", "/api/rewards")).data.balance, 25);
+  step(1, "two donors signed up on WhatsApp with alerts + location consent (one via referral → referrer +25 coins)");
 
   // 2. Family signs in and requests blood in the app.
-  assert.equal((await call("family", "/api/auth/demo", { method: "POST", body: { userId: "demo-requester" } })).status, 200);
   assert.equal((await call("family", "/api/auth/session")).data.signedIn, true);
   const created = await call("family", "/api/requests", { method: "POST", headers: { "idempotency-key": "demo-e2e-0001" }, body: { hospitalId: "demo-hospital-1", bloodGroup: "O-", component: "PACKED_RED_CELLS", units: 1, neededBy: new Date(Date.now() + 6 * 3_600_000).toISOString(), language: "en", confirmed: true } });
   assert.equal(created.status, 201, JSON.stringify(created.data));
@@ -97,11 +103,24 @@ try {
   assert.equal(track.data.request.status, "CLOSED");
   step(5, "donation confirmed, units issued, request closed FULFILLED; family sees it on the tracking page");
 
-  for (const page of ["/", "/login", "/request", "/donor", "/dashboard", "/demo", `/track/${id}`, "/terms"]) {
+  // 6. Rewards: the donor earned 100 coins and redeems a sponsor coupon in the app.
+  const donorUser = after.data.invites.find((i) => i.status === "ACCEPTED");
+  assert.ok(donorUser);
+  const award = (await call("coord", "/api/demo/inbox?phone=%2B919822200001")).data.messages.find((m) => m.purpose === "RECOGNITION");
+  assert.match(award.message.text, /earned 100 RaktDoot coins/);
+  assert.equal((await call("family", "/api/rewards")).data.balance, 75, "referrer got the first-donation bonus");
+  const store = (await call("family", "/api/rewards/store")).data.items;
+  const coffee = store.find((i) => i.costCoins === 50);
+  const bought = await call("family", "/api/rewards/redeem", { method: "POST", headers: { "idempotency-key": "demo-e2e-redeem-1" }, body: { itemId: coffee.id } });
+  assert.equal(bought.status, 201, JSON.stringify(bought.data));
+  assert.match(bought.data.code, /^DEMO-CAFE-/);
+  step(6, `donor earned 100 coins; referrer earned 75 and redeemed "${coffee.title}" → coupon ${bought.data.code}`);
+
+  for (const page of ["/", "/login", "/request", "/donor", "/dashboard", "/demo", `/track/${id}`, "/terms", "/rewards", `/r/${refCode}`]) {
     const r = await fetch(base + page);
     assert.equal(r.status, 200, `${page} renders`);
   }
-  console.log("  ✓ all 8 pages render\nDemo rehearsal passed.");
+  console.log("  ✓ all 10 pages render\nDemo rehearsal passed.");
 } finally {
   if (server && server.exitCode === null) { const done = new Promise((r) => server.once("exit", r)); server.kill(); await done; }
   await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 300 });

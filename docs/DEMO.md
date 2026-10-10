@@ -22,6 +22,7 @@ Minimum `.env` for the recording:
 | Variable | Value |
 |---|---|
 | `DEMO_MODE` | `true` (enables demo sign-in buttons and the WhatsApp inbox page) |
+| `FEATURE_TOKEN_REWARDS` | `true` (coins, referral links, sponsor store) |
 | `APP_BASE_URL` | `http://localhost:3000` (or your public tunnel URL, see WhatsApp below) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | from Google Cloud Console, redirect URI `<APP_BASE_URL>/api/auth/google/callback` |
 | WhatsApp variables | optional; without them every message appears on `/demo` as *simulated* |
@@ -54,7 +55,9 @@ inbox shows it as *failed*; the fix in production is an approved template.
 5. **Alert donors**: *📲 Alert nearby donors on WhatsApp*. Both phones receive the invite with **Accept / Ignore / Pause alerts**. (Without WhatsApp configured, show `/demo`.)
 6. **Donor taps Accept**: the donor gets the request ID and centre instructions; the second donor gets "no longer needed"; the dashboard shows *1/1 committed*; the family's tracking page updates by itself.
 7. **Close the loop**: *Donated* → certificate code on the donor's phone → *Record units issued* → *Close as fulfilled*. The family timeline ends in *Closed*.
-8. (Optional) Copilot / forecast pages from Member 3.
+8. **Rewards**: the donor's WhatsApp says they earned 100 coins. On `/rewards`, show the balance, the referral link (*Share on WhatsApp*), and redeem a sponsor coupon (e.g. *Free filter coffee* → `DEMO-CAFE-0001`).
+   For the referral shot, open `/rewards` as the family member first, copy their link, and have the second donor phone open it → *Join on WhatsApp* (sends `JOIN <code>`) → sign up as donor → the referrer's balance shows +25.
+9. (Optional) Copilot / forecast pages from Member 3.
 
 Safety lines to say on camera: donors are contacted only for **verified** requests;
 only donors who **opted in** to alerts and location are matched; donation happens only

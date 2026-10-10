@@ -11,6 +11,7 @@ import type { Prisma, RequestStatus } from "@prisma/client";
 import { getDb } from "../db.ts";
 import { ApiError } from "../http.ts";
 import { cancelPending, enqueue } from "../notifications/outbox.ts";
+import { rewardConfirmedDonation } from "../rewards/service.ts";
 
 type Tx = Prisma.TransactionClient;
 const DAY_MS = 86_400_000;
@@ -272,10 +273,13 @@ export async function recordDonorOutcome(actor: ActorContext, inviteId: string, 
         where: { inviteId: invite.id }, update: {},
         create: { userId: invite.donorId, kind: "CERTIFICATE", inviteId: invite.id, code: `RD-${invite.id.slice(-10).toUpperCase()}` },
       });
+      // Coins only for a centre-confirmed donation (never for accepting an alert).
+      const coins = await rewardConfirmedDonation(tx, invite.donorId, invite.id);
       if (invite.donor.phone) {
-        await enqueue(tx, { userId: invite.donorId, toPhone: invite.donor.phone, purpose: "RECOGNITION", message: { to: invite.donor.phone, kind: "text", text: `🏅 Thank you for donating! Your RaktDoot certificate code is ${award.code}. We'll remind you when you may be eligible again (only if you allowed reminders).` }, dedupeKey: `award:${award.id}` });
+        const coinLine = coins > 0 ? ` You also earned ${coins} RaktDoot coins for sponsor rewards: ${process.env.APP_BASE_URL ?? ""}/rewards` : "";
+        await enqueue(tx, { userId: invite.donorId, toPhone: invite.donor.phone, purpose: "RECOGNITION", message: { to: invite.donor.phone, kind: "text", text: `🏅 Thank you for donating! Your RaktDoot certificate code is ${award.code}.${coinLine} We'll remind you when you may be eligible again (only if you allowed reminders).` }, dedupeKey: `award:${award.id}` });
       }
-      return { status: "DONATED", certificate: award.code };
+      return { status: "DONATED", certificate: award.code, coins };
     }
     // DEFERRED / NO_SHOW free the slot so outreach can continue.
     await tx.outreachInvite.update({ where: { id: invite.id }, data: { status: outcome === "DEFERRED" ? "DEFERRED" : "WITHDRAWN" } });

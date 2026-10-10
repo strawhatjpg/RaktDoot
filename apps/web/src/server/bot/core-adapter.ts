@@ -15,6 +15,17 @@ import { updateConsents } from "../consent/service.ts";
 import { createBloodRequest } from "../requests/service.ts";
 import { respondToInvite as respond } from "../outreach/service.ts";
 import { flushOutbox } from "../notifications/sender.ts";
+import { attachReferral, rewardReferredDonorRegistered } from "../rewards/service.ts";
+
+/** "JOIN ABCD2345" (prefilled by a referral link) attaches the referral before onboarding. */
+const JOIN_RE = /^\s*join\s+([A-Za-z0-9]{8})\s*$/i;
+export async function handleReferralMessage(phone: string, text: string | undefined): Promise<boolean> {
+  const m = text ? JOIN_RE.exec(text) : null;
+  if (!m) return false;
+  const actor = await actorFor(phone);
+  await attachReferral(actor.userId, m[1]!.toUpperCase());
+  return true;
+}
 
 async function actorFor(phone: string): Promise<ActorContext> {
   if (!/^\+\d{8,15}$/.test(phone)) throw new Error("phone must be E.164");
@@ -84,10 +95,15 @@ export function createPrismaCoreApi(appBaseUrl: string): CoreApi {
       // WhatsApp sign-up: becomes AVAILABLE only if the donor allowed alerts in this chat.
       const consents = await db.consent.findMany({ where: { userId: actor.userId, requestId: null, type: "URGENT_ALERTS", channel: "WHATSAPP" }, orderBy: [{ recordedAt: "desc" }, { id: "desc" }], take: 1 });
       const alerts = consents[0]?.granted === true;
-      await db.donorProfile.upsert({
-        where: { userId: actor.userId },
-        create: { userId: actor.userId, bloodGroup: data.bloodGroup, availability: alerts ? "AVAILABLE" : "PAUSED" },
-        update: { bloodGroup: data.bloodGroup, ...(alerts ? { availability: "AVAILABLE", unavailableUntil: null, availabilityUpdatedAt: new Date() } : {}) },
+      const bloodGroup = data.bloodGroup;
+      await db.$transaction(async (tx) => {
+        const existing = await tx.donorProfile.findUnique({ where: { userId: actor.userId }, select: { userId: true } });
+        await tx.donorProfile.upsert({
+          where: { userId: actor.userId },
+          create: { userId: actor.userId, bloodGroup, availability: alerts ? "AVAILABLE" : "PAUSED" },
+          update: { bloodGroup, ...(alerts ? { availability: "AVAILABLE", unavailableUntil: null, availabilityUpdatedAt: new Date() } : {}) },
+        });
+        if (!existing) await rewardReferredDonorRegistered(tx, actor.userId);
       });
       await applyPendingLocation(phone, actor);
       await db.auditLog.create({ data: { actorId: actor.userId, action: "DONOR_REGISTERED_WHATSAPP", entity: "DonorProfile", entityId: actor.userId } });
@@ -169,6 +185,12 @@ export async function deleteUserData(userId: string): Promise<void> {
     await tx.donorProfile.deleteMany({ where: { userId } }); // cascades location
     await tx.session.deleteMany({ where: { userId } });
     await tx.oAuthAccount.deleteMany({ where: { userId } });
+    // Rewards: erase balance, ledger, referral links and issued coupon codes.
+    await tx.redemption.deleteMany({ where: { userId } });
+    await tx.coinEntry.deleteMany({ where: { userId } });
+    await tx.wallet.deleteMany({ where: { userId } });
+    await tx.referralCode.deleteMany({ where: { userId } });
+    await tx.referral.deleteMany({ where: { OR: [{ referredUserId: userId }, { referrerId: userId }] } });
     await tx.notification.updateMany({ where: { userId, status: "PENDING" }, data: { status: "CANCELLED" } });
     await tx.notification.updateMany({ where: { userId }, data: { toPhone: "deleted", payload: "{}", userId: null } });
     await tx.user.update({ where: { id: userId }, data: { phone: null, email: null, name: "Deleted user" } });

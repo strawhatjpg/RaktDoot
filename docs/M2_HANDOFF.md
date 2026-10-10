@@ -124,6 +124,27 @@ with lat/lng 0,0 (M1 sends `{lat:0,lng:0}` for typed areas); the adapter treats 
 the directory are labelled but not stored as coordinates. Donation campaigns from the
 Copilot are recorded but not sent (they need their own consent purpose).
 
+## Milestone 10 — coins, referrals and sponsor coupon store
+
+Revised policy: `docs/REWARDS_POLICY.md`. Gate: `FEATURE_TOKEN_REWARDS=true`.
+Migration `202610100004_rewards` adds `Wallet`, `CoinEntry` (append-only ledger),
+`ReferralCode`, `Referral`, `Sponsor`, `StoreItem`, `CouponCode`, `Redemption` (new tables only).
+
+| Piece | Behaviour | Where |
+|---|---|---|
+| Earning | 100 coins per **centre-confirmed** donation; 25 to a referrer when the referred person registers as a donor; +50 on their first confirmed donation. Idempotent (unique `refKey`). Referral cap 10 per 30 days. | `src/server/rewards/service.ts` (hooked into `recordDonorOutcome`, `upsertDonorProfile`, WhatsApp `updateDonor`) |
+| Referrals | `/r/<code>` landing page → *Join on WhatsApp* (prefilled `JOIN <code>`, recorded from the signed webhook or simulator) or *Sign up in the app* (code kept in localStorage, attached after sign-in). New accounts only (24 h), once, not self. | `src/app/r/[code]`, `src/server/bot/{index,core-adapter}.ts`, `POST /api/rewards/referral` |
+| Store | Sponsor items with coupon codes; redemption debits (`balance >= cost`) and claims one unused code in one transaction; Idempotency-Key; per-user limit. Admin adds items and codes. | `GET /api/rewards/store`, `POST /api/rewards/redeem`, `POST /api/admin/store-items` |
+| Wallet | Balance, history, referral link + stats, my coupon codes | `GET /api/rewards`, `/rewards` page |
+| Seed | 3 fictional sponsors × 20 demo codes (`DEMO-CAFE-0001`…) | `prisma/seed.ts` |
+
+**M1 note:** the WhatsApp webhook route (M1-owned) now also calls `recordReferralsFromWebhook`
+after signature verification; the bot flow itself is unchanged ("JOIN …" just starts onboarding).
+
+Validation: 94 unit tests, 47 integration tests (incl. concurrent redemptions, referral
+abuse cases, ledger = balance), typecheck, build, smoke and the demo rehearsal (now with
+referral → donation → coins → coupon) pass.
+
 ## Merge notes for `main` (checked against origin branches on 2026-10-10)
 
 `m2-core` merges cleanly with `main`. Against `m1-bot-ai` (b3ef86a) and
