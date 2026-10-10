@@ -86,6 +86,22 @@ export const DONOR_SEXES = ["MALE", "FEMALE", "UNSPECIFIED"] as const;
 export type DonorSex = (typeof DONOR_SEXES)[number];
 
 /**
+ * Donor-stated availability. New donors start PAUSED and must opt in to AVAILABLE.
+ * UNAVAILABLE carries an end date; after it passes the donor is treated as PAUSED
+ * (never silently AVAILABLE) until they reconfirm.
+ */
+export const AVAILABILITY_STATES = ["AVAILABLE", "PAUSED", "UNAVAILABLE"] as const;
+export type Availability = (typeof AVAILABILITY_STATES)[number];
+
+/** Version of the terms/privacy notice shown to users. Bump when the notice changes. */
+export const CURRENT_TERMS_VERSION = "2026-10-v1";
+
+export const MAX_TRAVEL_RADIUS_KM = 50;
+
+/** CONTACT_SHARING is granted per request when a donor accepts, never globally. */
+export const CHANNEL_SCOPED_CONSENTS: readonly ConsentType[] = ["URGENT_ALERTS", "DONATION_REMINDERS"];
+
+/**
  * Minimum whole-blood donation intervals used for PROVISIONAL reminders only.
  * Final eligibility is always decided by blood centre screening.
  * UNSPECIFIED uses the longer, conservative interval.

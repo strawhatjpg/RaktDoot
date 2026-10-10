@@ -1,0 +1,240 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  REQUESTER
+  DONOR
+  HOSPITAL_STAFF
+  BLOOD_CENTRE_STAFF
+  COORDINATOR
+  ADMIN
+}
+
+enum RequestStatus {
+  DRAFT
+  AWAITING_CONFIRMATION
+  OPEN
+  CENTRES_LISTED
+  STOCK_CONFIRMED
+  OUTREACH_ACTIVE
+  DONOR_ACCEPTED
+  DONOR_ARRIVED
+  DONATION_CONFIRMED
+  CLOSED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum FinalOutcome {
+  FULFILLED
+  CANCELLED
+  EXPIRED
+  UNRESOLVED
+}
+
+enum BloodComponent {
+  WHOLE_BLOOD
+  PACKED_RED_CELLS
+  PLATELETS
+  PLASMA
+  UNKNOWN
+}
+
+enum ConsentType {
+  TERMS
+  URGENT_ALERTS
+  DONATION_REMINDERS
+  LOCATION_STORAGE
+  CONTACT_SHARING
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  APP_PUSH
+}
+
+enum Availability {
+  AVAILABLE
+  PAUSED
+  UNAVAILABLE
+}
+
+enum StockStatus {
+  REPORTED
+  CONFIRMED
+  RESERVED
+}
+
+model User {
+  id                String    @id @default(cuid())
+  phone             String?   @unique
+  name              String
+  preferredLanguage String    @default("en")
+  role              UserRole  @default(REQUESTER)
+  verifiedAt        DateTime?
+  hospitalId        String?
+  hospital          Hospital? @relation(fields: [hospitalId], references: [id])
+  district          String?
+  isSimulated       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  sessions          Session[]
+  donorProfile      DonorProfile?
+  consents          Consent[]
+  requests          BloodRequest[]
+  events            RequestEvent[]
+  audits            AuditLog[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Hospital {
+  id          String   @id @default(cuid())
+  name        String
+  district    String
+  lat         Float
+  lng         Float
+  isSimulated Boolean  @default(false)
+  staff       User[]
+  requests    BloodRequest[]
+}
+
+model BloodCentre {
+  id          String   @id @default(cuid())
+  name        String
+  licenceNo   String?
+  phone       String?
+  address     String
+  district    String
+  lat         Float
+  lng         Float
+  isSimulated Boolean  @default(false)
+  snapshots   StockSnapshot[]
+}
+
+model StockSnapshot {
+  id          String         @id @default(cuid())
+  centreId    String
+  centre      BloodCentre    @relation(fields: [centreId], references: [id], onDelete: Cascade)
+  bloodGroup  String
+  component   BloodComponent
+  units       Int
+  status      StockStatus    @default(REPORTED)
+  source      String
+  isSimulated Boolean        @default(false)
+  recordedAt  DateTime       @default(now())
+
+  @@index([centreId, bloodGroup, component, recordedAt])
+}
+
+model DonorProfile {
+  userId                String       @id
+  user                  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bloodGroup            String
+  sex                   String       @default("UNSPECIFIED")
+  travelRadiusKm        Float        @default(15)
+  availability          Availability @default(PAUSED)
+  availabilityUpdatedAt DateTime     @default(now())
+  unavailableUntil      DateTime?
+  lastDonationAt        DateTime?
+  /** SELF_REPORTED, SYNTHETIC_SEED or (future) CENTRE_CONFIRMED. */
+  lastDonationSource    String?
+  location              DonorLocation?
+}
+
+model DonorLocation {
+  userId    String       @id
+  donor     DonorProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  lat       Float
+  lng       Float
+  areaLabel String?
+  source    String
+  updatedAt DateTime     @default(now())
+}
+
+model Consent {
+  id           Int                  @id @default(autoincrement())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         ConsentType
+  channel      NotificationChannel?
+  requestId    String?
+  request      BloodRequest?        @relation(fields: [requestId], references: [id])
+  granted      Boolean
+  recordedAt   DateTime             @default(now())
+  source       String
+  termsVersion String
+
+  @@index([userId, type, channel, recordedAt, id])
+}
+
+model BloodRequest {
+  id             String             @id @default(cuid())
+  requesterId    String
+  requester      User               @relation(fields: [requesterId], references: [id])
+  hospitalId     String
+  hospital       Hospital           @relation(fields: [hospitalId], references: [id])
+  bloodGroup     String
+  component      BloodComponent
+  units          Int
+  neededBy       DateTime
+  language       String
+  status         RequestStatus      @default(OPEN)
+  verification   VerificationStatus @default(PENDING_REVIEW)
+  outcome        FinalOutcome?
+  isSimulated    Boolean            @default(false)
+  idempotencyKey String
+  payloadHash    String
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  events         RequestEvent[]
+  consents       Consent[]
+
+  @@unique([requesterId, idempotencyKey])
+  @@index([hospitalId, status, createdAt])
+}
+
+model RequestEvent {
+  id         String        @id @default(cuid())
+  requestId  String
+  request    BloodRequest  @relation(fields: [requestId], references: [id])
+  actorId    String
+  actor      User          @relation(fields: [actorId], references: [id])
+  fromStatus RequestStatus?
+  toStatus   RequestStatus
+  createdAt  DateTime      @default(now())
+
+  @@index([requestId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  actor     User     @relation(fields: [actorId], references: [id])
+  action    String
+  entity    String
+  entityId  String
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId, createdAt])
+}

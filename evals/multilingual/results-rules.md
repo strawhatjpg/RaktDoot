@@ -1,6 +1,6 @@
 # Multilingual extraction results
 
-Mode: **rules only (no AI)** · Cases: 32 · Run: 2026-10-10T10:53:39.549Z
+Mode: **rules only (no AI)** · Cases: 32 · Run: 2026-10-10T11:16:25.831Z
 
 | Field | Accuracy |
 |---|---|
