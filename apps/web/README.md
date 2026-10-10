@@ -1,7 +1,40 @@
 # apps/web
 
-Next.js App Router scaffold and Member 2 core API. The PWA screens, WhatsApp login,
-verification actions, matching, waves, reminders and worker are **not implemented yet**.
+Next.js App Router app: the M4 PWA (families + donors), the staff console, and the
+M2 core API. Verification actions, matching, waves, reminders and the worker are
+**not implemented yet** (the UI shows those steps as pending).
+
+## M4 frontend (quick start)
+
+```powershell
+npm.cmd install
+Copy-Item .env.example .env   # set SESSION_SECRET, DEMO_MODE=true, APP_BASE_URL=http://localhost:3000
+npm.cmd run db:generate; npm.cmd run db:migrate; npm.cmd run db:seed
+npm.cmd run dev               # http://localhost:3000
+# Optional, for the console forecast/briefing:
+cd services/forecast; python -m venv .venv; .venv\Scripts\pip install -r requirements.txt
+.venv\Scripts\uvicorn main:app --port 8000
+```
+
+| Area | Pages |
+|---|---|
+| Public | `/` landing, `/login` (WhatsApp code or demo account), `/simulator` (same bot engine as the WhatsApp webhook) |
+| App (signed in) | `/home`, `/request/new` (AI text/voice intake → nearby centres → confirm), `/requests`, `/track/{id}` (refreshes every 15 s), `/donor` (onboarding, availability, ~1 km location, consents) |
+| Console (verified staff) | `/console` briefing, `/console/forecast`, `/console/copilot`, `/console/drafts` (approve/edit/reject) |
+
+Frontend-only routes added by M4 (all in `src/app/api/`, logic in `src/server/auth/login.ts`):
+
+| Method | Route | Notes |
+|---|---|---|
+| POST / GET | `/api/auth/whatsapp/start`, `/api/auth/whatsapp/poll?code=` | M1 login code → M2 session cookie; first login creates a REQUESTER |
+| GET / POST | `/api/auth/demo` | **Only** when `DEMO_MODE=true` and not production; POST needs same-origin `Origin` = `APP_BASE_URL`; fixed seeded IDs only |
+| GET / POST | `/api/auth/me`, `/api/auth/logout` | Current user / revoke session |
+| POST | `/api/simulator` | `{ from, text \| buttonId \| location }` → bot replies (in-memory, nothing sent) |
+| POST | `/api/intake/extract` | `{ text }` → M1 extraction (rules; LLM when Gemini/Groq keys are set) |
+
+Without `WHATSAPP_BOT_NUMBER`, "Log in with WhatsApp" hands the code to `/simulator`.
+Without Gemini/Groq keys, the Copilot page shows a setup message; everything else still works.
+Styling is plain CSS in `src/app/styles/` (no UI framework).
 
 ## Setup (from repository root, PowerShell)
 
@@ -20,10 +53,10 @@ The seed is idempotent and creates 2 fictional hospitals, 15 fictional centres,
 40 fictional donors and 3 staff users. No routable phone numbers, real personal
 data or default passwords are seeded. These are not verified public listings.
 
-The CLI prints a temporary bearer token; keep it private. There is deliberately
-no public demo-login endpoint or trusted `x-user-id` header. M1 must integrate
-identity proof with the server-only `createSession` helper. The CLI and seed refuse
-production mode and require explicit `DEMO_MODE=true`.
+The CLI prints a temporary bearer token; keep it private. There is no trusted
+`x-user-id` header. Real sign-in is the WhatsApp login code (M1 proof → `createSession`).
+The demo-login endpoint above is local-demo only (`DEMO_MODE=true`, non-production,
+same-origin). The CLI and seed refuse production mode and require explicit `DEMO_MODE=true`.
 
 ## Available routes
 
