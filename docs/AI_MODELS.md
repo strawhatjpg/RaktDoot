@@ -66,5 +66,5 @@ Groq free plan as fallback on 429 / quota (one backoff retry, then next provider
 pending verifications, active outreach). The Copilot can phrase it in Hindi/Marathi; the UI can show the
 plain version if the LLM is rate-limited.
 
-**Tests:** 30 `node:test` tests run the real Cline SDK agent loop with a scripted offline model
+**Tests:** 31 `node:test` tests (+4 DB integration tests in `apps/web/tests/copilot.test.ts`) run the real Cline SDK agent loop with a scripted offline model
 (tool calls → draft → final answer), plus provider fallback, approval rules and template wording.

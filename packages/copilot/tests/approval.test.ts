@@ -94,6 +94,18 @@ test("safety is re-checked at approval time", async () => {
   assert.equal((await s.approve(created.draft.id, "COORDINATOR")).ok, false);
 });
 
+test("scoped views share drafts but re-check safety with their own data", async () => {
+  const s = store();
+  const created = await s.createDraft(outreach("REQ-1001"));
+  assert.ok(created.ok);
+  const blind = { ...createMockDataSource(), getRequest: async () => null }; // e.g. staff without access
+  const view = s.scoped(blind);
+  assert.equal(view.get(created.draft.id)?.id, created.draft.id);
+  assert.equal((await view.approve(created.draft.id, "COORDINATOR")).ok, false);
+  assert.equal((await s.scoped(createMockDataSource()).approve(created.draft.id, "COORDINATOR")).ok, true);
+  assert.equal(s.get(created.draft.id)?.status, "APPROVED");
+});
+
 test("campaign drafts need a district and a known component", async () => {
   const s = store();
   const base = { ...outreach("x"), kind: "DONATION_CAMPAIGN" as const, requestId: null };

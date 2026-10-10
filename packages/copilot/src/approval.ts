@@ -53,6 +53,8 @@ export interface ApprovalStoreOptions {
   onApproved?: (draft: CopilotDraft) => Promise<void> | void;
   now?: () => Date;
   newId?: () => string;
+  /** Internal: shared draft storage used by `scoped()` views. */
+  drafts?: Map<string, CopilotDraft>;
 }
 
 export function isApproverRole(role: UserRole): boolean {
@@ -65,18 +67,33 @@ export function isApproverRole(role: UserRole): boolean {
  * keeping the same rules.
  */
 export class ApprovalStore {
-  private readonly drafts = new Map<string, CopilotDraft>();
+  private readonly drafts: Map<string, CopilotDraft>;
   private readonly data: CopilotDataSource;
   private readonly onApproved?: ApprovalStoreOptions["onApproved"];
   private readonly now: () => Date;
   private readonly newId: () => string;
 
   constructor(options: ApprovalStoreOptions) {
+    this.drafts = options.drafts ?? new Map();
     this.data = options.data;
     this.onApproved = options.onApproved;
     this.now = options.now ?? (() => new Date());
     let counter = 0;
     this.newId = options.newId ?? (() => `DRAFT-${Date.now().toString(36)}-${(++counter).toString(36)}`);
+  }
+
+  /**
+   * Same drafts, but safety checks read from `data` (e.g. scoped to the signed-in
+   * staff member). Use one scoped view per HTTP request; no shared mutable actor.
+   */
+  scoped(data: CopilotDataSource): ApprovalStore {
+    return new ApprovalStore({
+      data,
+      drafts: this.drafts,
+      onApproved: this.onApproved,
+      now: this.now,
+      newId: this.newId,
+    });
   }
 
   /** Creates a PENDING_APPROVAL draft. Never sends anything. */

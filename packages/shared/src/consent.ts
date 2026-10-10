@@ -6,6 +6,8 @@ export interface ConsentRecord {
   channel: NotificationChannel | null;
   granted: boolean;
   recordedAt: Date;
+  /** Optional insertion order (e.g. DB id) to break ties between records with the same timestamp. */
+  sequence?: number;
 }
 
 /**
@@ -20,7 +22,8 @@ export function hasActiveConsent(
   let latest: ConsentRecord | undefined;
   for (const record of records) {
     if (record.type !== type || record.channel !== channel) continue;
-    if (latest === undefined || record.recordedAt.getTime() > latest.recordedAt.getTime()) {
+    const diff = latest === undefined ? 1 : record.recordedAt.getTime() - latest.recordedAt.getTime();
+    if (diff > 0 || (diff === 0 && (record.sequence ?? 0) > (latest?.sequence ?? 0))) {
       latest = record;
     }
   }

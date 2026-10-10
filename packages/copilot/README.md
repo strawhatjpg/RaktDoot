@@ -1,8 +1,9 @@
 # @raktdoot/copilot
 
 Coordinator Copilot built with the **Cline SDK** (`@cline/sdk`), plus the typed client for the forecast
-service. Framework-free, so it runs in a CLI today and in Next.js API routes later
-(`nextjs-routes/` has ready-to-copy routes).
+service. Framework-free: it runs in the demo CLI and in the Next.js app, which wires it to M2's sessions
+and DB in `apps/web/src/server/copilot/` and exposes `/api/forecast*` and `/api/copilot*`
+(see `apps/web/README.md`).
 
 Details and guardrails: [`docs/AI_MODELS.md`](../../docs/AI_MODELS.md) § 2.
 

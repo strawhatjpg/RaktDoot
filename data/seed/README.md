@@ -1,5 +1,11 @@
 # Seed data
 
+Current implementation: `apps/web/prisma/seed.ts` creates fictional fixtures directly
+in SQLite. All 15 centres are **fictional**, not verified public listings; no phone
+numbers are stored. It also seeds 40 fictional donors, two hospitals and three staff
+accounts. Enable DEMO_MODE explicitly and run `npm run db:seed` after migrations.
+The files listed below remain future work (Member 3 owns demand-history generation).
+
 Demo data for one pilot city. Everything simulated is flagged `isSimulated: true` and labelled in the UI.
 
 - `blood_centres_<city>.json` — real public directory entries (name, address, phone) with simulated stock

@@ -18,6 +18,9 @@ coverage/
 # Local databases
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+*.tsbuildinfo
 
 # OS / editor
 .DS_Store

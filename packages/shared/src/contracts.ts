@@ -4,8 +4,11 @@
  * Owner: Member 2 (core backend). Types only, so every stream can code against them immediately.
  */
 import type {
+  Availability,
   BloodComponent,
   BloodGroup,
+  ConsentType,
+  DonorSex,
   FinalOutcome,
   LocationSource,
   NotificationChannel,
@@ -66,8 +69,104 @@ export interface ExtractedRequest {
 
 // ---------- Member 2: core API shapes ----------
 
+/** Confirmed intake only. Identity, verification and status are server-owned. */
+export interface CreateBloodRequestInput {
+  hospitalId: string;
+  bloodGroup: BloodGroup;
+  component: Exclude<BloodComponent, "UNKNOWN">;
+  units: number;
+  neededBy: string;
+  language: LanguageCode;
+  confirmed: true;
+}
+
+export interface ApiErrorDTO {
+  error: { code: string; message: string; fields?: Record<string, string> };
+}
+
+export interface HospitalDTO {
+  id: string;
+  name: string;
+  district: string;
+  isSimulated: boolean;
+}
+
+export interface RequestEventDTO {
+  id: string;
+  fromStatus: RequestStatus | null;
+  toStatus: RequestStatus;
+  createdAt: string;
+}
+
+export interface BloodRequestDetailDTO {
+  request: BloodRequestDTO;
+  events: RequestEventDTO[];
+}
+
+// ---------- Member 2: consent and donor APIs ----------
+
+export interface ConsentUpdateItem {
+  type: Exclude<ConsentType, "CONTACT_SHARING">;
+  /** Required for URGENT_ALERTS and DONATION_REMINDERS; null for TERMS and LOCATION_STORAGE. */
+  channel: NotificationChannel | null;
+  granted: boolean;
+}
+
+/** termsVersion must equal the version of the notice the user was actually shown. */
+export interface ConsentUpdateInput {
+  termsVersion: string;
+  updates: ConsentUpdateItem[];
+}
+
+export interface ConsentStateDTO {
+  currentTermsVersion: string;
+  consents: Array<{ type: ConsentType; channel: NotificationChannel | null; granted: boolean; recordedAt: string; termsVersion: string }>;
+}
+
+export interface DonorRegistrationInput {
+  bloodGroup: BloodGroup;
+  sex: DonorSex;
+  travelRadiusKm: number;
+  /** The donor confirms they are 18 or older; screening at the centre is still final. */
+  ageConfirmed: true;
+  /** Optional self-reported last donation (UTC ISO). Can only move the date forward. */
+  lastDonationAt?: string;
+}
+
+export interface AvailabilityUpdateInput {
+  availability: Availability;
+  /** Required only for UNAVAILABLE. */
+  unavailableUntil?: string;
+}
+
+export interface DonorLocationDTO {
+  lat: number;
+  lng: number;
+  areaLabel: string | null;
+  source: LocationSource;
+  updatedAt: string;
+  needsUpdate: boolean;
+}
+
+export interface DonorProfileDTO {
+  bloodGroup: BloodGroup;
+  sex: DonorSex;
+  travelRadiusKm: number;
+  availability: Availability;
+  /** What matching uses: expired UNAVAILABLE is reported as PAUSED. */
+  effectiveAvailability: Availability;
+  unavailableUntil: string | null;
+  availabilityUpdatedAt: string;
+  lastDonationAt: string | null;
+  lastDonationSource: string | null;
+  /** Provisional whole-blood review date only; never a medical eligibility decision. */
+  provisionalNextReviewAt: string | null;
+  location: DonorLocationDTO | null;
+}
+
 export interface BloodRequestDTO {
   id: string;
+  isSimulated?: boolean;
   status: RequestStatus;
   verification: VerificationStatus;
   outcome: FinalOutcome | null;
@@ -85,6 +184,8 @@ export interface CentreResultDTO {
   centreId: string;
   name: string;
   phone: string;
+  /** Present for the core API. Fictional centres must never appear to be real listings. */
+  isSimulated?: boolean;
   distanceKm: number;
   stock: {
     units: number;

@@ -62,7 +62,11 @@ export function createCopilotTools(deps: ToolDeps) {
       if (!canStartDonorOutreach(request.verification)) {
         return { error: `Request ${requestId} is ${request.verification}. Donors can be ranked only after staff verify it.` };
       }
-      return { requestId, donors: await data.rankDonors(requestId, limit) };
+      const donors = await data.rankDonors(requestId, limit);
+      if (donors.length === 0) {
+        return { requestId, donors, note: "No ranked donors available yet (matching may not be running). Do not invent donors." };
+      }
+      return { requestId, donors };
     },
   );
 
