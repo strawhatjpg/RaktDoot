@@ -5,16 +5,29 @@
  */
 import { createSession, sessionCookie } from "../../../../server/auth/session.ts";
 import { getDb } from "../../../../server/db.ts";
-import { ApiError, apiError, readJson } from "../../../../server/http.ts";
+import { ApiError, apiError, json, readJson } from "../../../../server/http.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const ALLOWED = ["demo-coordinator", "demo-hospital-staff", "demo-centre-staff", "demo-requester"];
+const DEMO_ACCOUNTS = [
+  { id: "demo-requester", label: "Family member", description: "Raise and track a blood request" },
+  { id: "demo-donor-1", label: "Donor", description: "Consent, availability and location" },
+  { id: "demo-coordinator", label: "Coordinator", description: "Verify, outreach, forecast and Copilot" },
+  { id: "demo-hospital-staff", label: "Hospital staff", description: "Verify requests for their hospital" },
+  { id: "demo-centre-staff", label: "Blood centre staff", description: "Centre view of the console" },
+] as const;
+const ALLOWED: readonly string[] = DEMO_ACCOUNTS.map((a) => a.id);
+const demoEnabled = () => process.env.DEMO_MODE === "true" && process.env.NODE_ENV !== "production";
+
+/** GET → the demo accounts the login page may offer (empty unless demo mode is on). */
+export async function GET(): Promise<Response> {
+  return json({ enabled: demoEnabled(), accounts: demoEnabled() ? DEMO_ACCOUNTS : [] });
+}
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    if (process.env.DEMO_MODE !== "true" || process.env.NODE_ENV === "production") throw new ApiError(404, "NOT_FOUND", "Not found");
+    if (!demoEnabled()) throw new ApiError(404, "NOT_FOUND", "Not found");
     const origin = request.headers.get("origin");
     if (!process.env.APP_BASE_URL || origin !== new URL(process.env.APP_BASE_URL).origin) throw new ApiError(403, "INVALID_ORIGIN", "A same-origin request is required");
     const userId = (await readJson(request) as { userId?: unknown } | null)?.userId;
