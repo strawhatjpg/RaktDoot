@@ -1,0 +1,14 @@
+# Render Blueprint (free tier). M2 adds the web + worker services here later.
+services:
+  - type: web
+    name: raktdoot-forecast
+    runtime: docker
+    plan: free
+    dockerfilePath: ./services/forecast/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: FORECAST_MAX_ITER
+        value: "200"
+      - key: FORECAST_BACKTEST_FOLDS
+        value: "6"

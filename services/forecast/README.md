@@ -31,6 +31,10 @@ If the CSV is missing, the service generates it on startup.
 | POST | `/forecast` | `ForecastQuery` `{ district, horizonWeeks (1–4), bloodGroups?, components? }` | `ForecastResponse` (see `packages/shared/src/contracts.ts`) |
 | GET | `/backtest?district=Pune` | — | model vs baseline MAE, P10–P90 coverage, per-week errors (chart data) |
 
+Sample responses for UI work without running the service: [`examples/forecast_pune.json`](examples/forecast_pune.json), [`examples/backtest_pune.json`](examples/backtest_pune.json). From Next.js, use the typed client in `packages/copilot` (`createForecastClient`).
+
+Deploy: `render.yaml` at the repo root + `Dockerfile` here (build context = repo root). Free instances sleep, so open `/health` before the demo.
+
 Input is validated with Pydantic: bad blood groups (`"B+ve"`), `UNKNOWN` component, horizon outside 1–4 or extra fields → `422`; unknown district → `404`. Interactive docs at `/docs`.
 
 ```bash

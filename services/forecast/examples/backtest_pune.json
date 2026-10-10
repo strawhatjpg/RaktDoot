@@ -1,0 +1,130 @@
+{
+  "district": "Pune",
+  "isSynthetic": true,
+  "modelMae": 8.48,
+  "baselineMae": 11.05,
+  "weeksTested": 24,
+  "intervalCoverage": 0.781,
+  "weekly": [
+    {
+      "weekStart": "2026-04-13",
+      "modelMae": 8.97,
+      "baselineMae": 9.31
+    },
+    {
+      "weekStart": "2026-04-20",
+      "modelMae": 6.99,
+      "baselineMae": 10.69
+    },
+    {
+      "weekStart": "2026-04-27",
+      "modelMae": 7.09,
+      "baselineMae": 7.88
+    },
+    {
+      "weekStart": "2026-05-04",
+      "modelMae": 6.05,
+      "baselineMae": 10.16
+    },
+    {
+      "weekStart": "2026-05-11",
+      "modelMae": 8.38,
+      "baselineMae": 12.62
+    },
+    {
+      "weekStart": "2026-05-18",
+      "modelMae": 6.16,
+      "baselineMae": 10.72
+    },
+    {
+      "weekStart": "2026-05-25",
+      "modelMae": 10.1,
+      "baselineMae": 11.5
+    },
+    {
+      "weekStart": "2026-06-01",
+      "modelMae": 7.78,
+      "baselineMae": 11.0
+    },
+    {
+      "weekStart": "2026-06-08",
+      "modelMae": 7.26,
+      "baselineMae": 9.94
+    },
+    {
+      "weekStart": "2026-06-15",
+      "modelMae": 6.19,
+      "baselineMae": 6.78
+    },
+    {
+      "weekStart": "2026-06-22",
+      "modelMae": 6.86,
+      "baselineMae": 6.62
+    },
+    {
+      "weekStart": "2026-06-29",
+      "modelMae": 5.69,
+      "baselineMae": 7.44
+    },
+    {
+      "weekStart": "2026-07-06",
+      "modelMae": 7.19,
+      "baselineMae": 11.41
+    },
+    {
+      "weekStart": "2026-07-13",
+      "modelMae": 8.61,
+      "baselineMae": 8.25
+    },
+    {
+      "weekStart": "2026-07-20",
+      "modelMae": 6.35,
+      "baselineMae": 7.41
+    },
+    {
+      "weekStart": "2026-07-27",
+      "modelMae": 7.98,
+      "baselineMae": 9.12
+    },
+    {
+      "weekStart": "2026-08-03",
+      "modelMae": 6.35,
+      "baselineMae": 8.53
+    },
+    {
+      "weekStart": "2026-08-10",
+      "modelMae": 10.89,
+      "baselineMae": 15.5
+    },
+    {
+      "weekStart": "2026-08-17",
+      "modelMae": 10.03,
+      "baselineMae": 14.38
+    },
+    {
+      "weekStart": "2026-08-24",
+      "modelMae": 12.21,
+      "baselineMae": 16.53
+    },
+    {
+      "weekStart": "2026-08-31",
+      "modelMae": 12.85,
+      "baselineMae": 12.84
+    },
+    {
+      "weekStart": "2026-09-07",
+      "modelMae": 9.04,
+      "baselineMae": 10.81
+    },
+    {
+      "weekStart": "2026-09-14",
+      "modelMae": 14.19,
+      "baselineMae": 19.34
+    },
+    {
+      "weekStart": "2026-09-21",
+      "modelMae": 10.43,
+      "baselineMae": 16.5
+    }
+  ]
+}

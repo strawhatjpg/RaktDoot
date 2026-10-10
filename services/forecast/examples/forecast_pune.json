@@ -1,0 +1,244 @@
+{
+  "district": "Pune",
+  "generatedAt": "2026-10-10T10:00:00Z",
+  "isSynthetic": true,
+  "backtest": {
+    "modelMae": 8.48,
+    "baselineMae": 11.05,
+    "weeksTested": 24
+  },
+  "points": [
+    {
+      "weekStart": "2026-09-28",
+      "bloodGroup": "B+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 112.2,
+      "p50": 163.8,
+      "p90": 240.2,
+      "expectedSupply": 130.6,
+      "shortageRisk": 0.792,
+      "drivers": [
+        "Demand expected down 31% vs last week",
+        "Median demand 164 vs expected supply 131 units"
+      ]
+    },
+    {
+      "weekStart": "2026-09-28",
+      "bloodGroup": "B+",
+      "component": "PLATELETS",
+      "p10": 97.8,
+      "p50": 203.3,
+      "p90": 268.4,
+      "expectedSupply": 115.9,
+      "shortageRisk": 0.855,
+      "drivers": [
+        "Dengue season (week 40): platelet demand usually rises",
+        "Demand expected up 18% vs last week",
+        "Median demand 203 vs expected supply 116 units"
+      ]
+    },
+    {
+      "weekStart": "2026-09-28",
+      "bloodGroup": "O+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 127.6,
+      "p50": 182.5,
+      "p90": 262.0,
+      "expectedSupply": 168.4,
+      "shortageRisk": 0.625,
+      "drivers": [
+        "Demand expected down 15% vs last week",
+        "Median demand 183 vs expected supply 168 units"
+      ]
+    },
+    {
+      "weekStart": "2026-09-28",
+      "bloodGroup": "O+",
+      "component": "PLATELETS",
+      "p10": 113.1,
+      "p50": 204.0,
+      "p90": 276.9,
+      "expectedSupply": 136.7,
+      "shortageRisk": 0.827,
+      "drivers": [
+        "Dengue season (week 40): platelet demand usually rises",
+        "Demand expected up 19% vs last week",
+        "Median demand 204 vs expected supply 137 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-05",
+      "bloodGroup": "B+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 110.8,
+      "p50": 163.7,
+      "p90": 232.6,
+      "expectedSupply": 130.9,
+      "shortageRisk": 0.783,
+      "drivers": [
+        "Demand expected down 31% vs last week",
+        "Median demand 164 vs expected supply 131 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-05",
+      "bloodGroup": "B+",
+      "component": "PLATELETS",
+      "p10": 91.7,
+      "p50": 180.5,
+      "p90": 244.1,
+      "expectedSupply": 111.1,
+      "shortageRisk": 0.84,
+      "drivers": [
+        "Dengue season (week 41): platelet demand usually rises",
+        "Median demand 180 vs expected supply 111 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-05",
+      "bloodGroup": "O+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 126.3,
+      "p50": 181.0,
+      "p90": 255.2,
+      "expectedSupply": 156.9,
+      "shortageRisk": 0.71,
+      "drivers": [
+        "Demand expected down 16% vs last week",
+        "Median demand 181 vs expected supply 157 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-05",
+      "bloodGroup": "O+",
+      "component": "PLATELETS",
+      "p10": 103.9,
+      "p50": 163.3,
+      "p90": 220.0,
+      "expectedSupply": 114.2,
+      "shortageRisk": 0.853,
+      "drivers": [
+        "Dengue season (week 41): platelet demand usually rises",
+        "Median demand 163 vs expected supply 114 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-12",
+      "bloodGroup": "B+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 105.7,
+      "p50": 155.5,
+      "p90": 232.5,
+      "expectedSupply": 130.9,
+      "shortageRisk": 0.732,
+      "drivers": [
+        "Demand expected down 34% vs last week",
+        "Median demand 155 vs expected supply 131 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-12",
+      "bloodGroup": "B+",
+      "component": "PLATELETS",
+      "p10": 80.5,
+      "p50": 121.4,
+      "p90": 170.4,
+      "expectedSupply": 107.8,
+      "shortageRisk": 0.659,
+      "drivers": [
+        "Dengue season (week 42): platelet demand usually rises",
+        "Demand expected down 29% vs last week",
+        "Median demand 121 vs expected supply 108 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-12",
+      "bloodGroup": "O+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 123.8,
+      "p50": 172.7,
+      "p90": 242.2,
+      "expectedSupply": 168.0,
+      "shortageRisk": 0.544,
+      "drivers": [
+        "Demand expected down 20% vs last week",
+        "Median demand 173 vs expected supply 168 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-12",
+      "bloodGroup": "O+",
+      "component": "PLATELETS",
+      "p10": 102.2,
+      "p50": 152.1,
+      "p90": 202.5,
+      "expectedSupply": 105.2,
+      "shortageRisk": 0.884,
+      "drivers": [
+        "Dengue season (week 42): platelet demand usually rises",
+        "Demand expected down 11% vs last week",
+        "Median demand 152 vs expected supply 105 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-19",
+      "bloodGroup": "B+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 110.4,
+      "p50": 176.4,
+      "p90": 233.0,
+      "expectedSupply": 133.9,
+      "shortageRisk": 0.793,
+      "drivers": [
+        "Dussehra week: donations usually dip",
+        "Demand expected down 25% vs last week",
+        "Median demand 176 vs expected supply 134 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-19",
+      "bloodGroup": "B+",
+      "component": "PLATELETS",
+      "p10": 79.0,
+      "p50": 122.5,
+      "p90": 172.2,
+      "expectedSupply": 96.8,
+      "shortageRisk": 0.771,
+      "drivers": [
+        "Dengue season (week 43): platelet demand usually rises",
+        "Dussehra week: donations usually dip",
+        "Demand expected down 29% vs last week"
+      ]
+    },
+    {
+      "weekStart": "2026-10-19",
+      "bloodGroup": "O+",
+      "component": "PACKED_RED_CELLS",
+      "p10": 127.3,
+      "p50": 187.4,
+      "p90": 260.2,
+      "expectedSupply": 163.9,
+      "shortageRisk": 0.688,
+      "drivers": [
+        "Dussehra week: donations usually dip",
+        "Demand expected down 13% vs last week",
+        "Median demand 187 vs expected supply 164 units"
+      ]
+    },
+    {
+      "weekStart": "2026-10-19",
+      "bloodGroup": "O+",
+      "component": "PLATELETS",
+      "p10": 98.2,
+      "p50": 140.2,
+      "p90": 208.8,
+      "expectedSupply": 93.0,
+      "shortageRisk": 0.923,
+      "drivers": [
+        "Dengue season (week 43): platelet demand usually rises",
+        "Dussehra week: donations usually dip",
+        "Demand expected down 18% vs last week"
+      ]
+    }
+  ]
+}

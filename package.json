@@ -11,8 +11,10 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "test": "node --test \"packages/shared/tests/*.test.ts\"",
-    "typecheck": "echo Typecheck is added with the TypeScript toolchain during the coding phase."
+    "test": "node --test \"packages/shared/tests/*.test.ts\" \"packages/copilot/tests/*.test.ts\"",
+    "test:forecast": "cd services/forecast && .venv/bin/python -m pytest -q",
+    "typecheck": "npm run typecheck -w @raktdoot/copilot",
+    "copilot:demo": "npm run demo -w @raktdoot/copilot --"
   },
   "license": "MIT"
 }
