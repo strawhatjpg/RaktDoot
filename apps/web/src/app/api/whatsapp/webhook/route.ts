@@ -2,7 +2,7 @@
 // GET  → subscription handshake (hub.verify_token).  POST → signed message events.
 import { after } from "next/server";
 import { handleVerify, handleWebhook } from "@raktdoot/bot";
-import { getBot } from "../../../../server/bot/index.ts";
+import { getBot, recordReferralsFromWebhook } from "../../../../server/bot/index.ts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,6 +29,7 @@ export async function POST(request: Request): Promise<Response> {
     onError: (err) => console.error("[whatsapp] processing failed", err instanceof Error ? err.name : "UnknownError"),
   });
   // Reply 200 to Meta immediately; process and send replies after the response.
-  after(result.done);
+  // (M2) Referral "JOIN <code>" messages are recorded only for signature-verified payloads.
+  after(result.status === 200 ? Promise.all([result.done, recordReferralsFromWebhook(raw)]).then(() => undefined) : result.done);
   return new Response(null, { status: result.status });
 }

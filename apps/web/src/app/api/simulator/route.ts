@@ -1,7 +1,7 @@
 // Owner: M1. Web WhatsApp simulator (demo fallback, no Meta account needed).
 // POST { from, text? | buttonId? | location? } → { replies: OutboundMessage[] }. M4's /simulator page calls this.
 import { simulate, type SimulatorInput } from "@raktdoot/bot";
-import { getBot, simulatorEnabled } from "../../../server/bot/index.ts";
+import { getBot, recordReferral, simulatorEnabled } from "../../../server/bot/index.ts";
 import { ApiError, apiError, json, readJson } from "../../../server/http.ts";
 
 export const runtime = "nodejs";
@@ -30,6 +30,7 @@ export async function POST(request: Request): Promise<Response> {
   try {
     if (!simulatorEnabled()) throw new ApiError(404, "NOT_FOUND", "Not found");
     const input = parseInput(await readJson(request));
+    await recordReferral(input.from, input.text);
     const replies = await simulate(input, getBot().bot);
     return json({ replies });
   } catch (error) {

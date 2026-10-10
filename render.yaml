@@ -1,5 +1,40 @@
-# Render Blueprint (free tier). M2 adds the web + worker services here later.
+# Render Blueprint. The web app and worker share ONE SQLite file on a persistent
+# disk, so they must run on the same instance. Free Render web services have no
+# persistent disk and the free plan has no background workers; see docs/DEMO.md.
 services:
+  - type: web
+    name: raktdoot-web
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run db:generate && npm run build
+    startCommand: npm run db:migrate && (npm run worker & npm run start)
+    disk:
+      name: raktdoot-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_URL
+        value: file:/var/data/raktdoot.db
+      - key: APP_BASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: WHATSAPP_BOT_NUMBER
+        sync: false
+      - key: FORECAST_SERVICE_URL
+        sync: false
   - type: web
     name: raktdoot-forecast
     runtime: docker

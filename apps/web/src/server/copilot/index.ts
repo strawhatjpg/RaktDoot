@@ -12,6 +12,8 @@ import { requireActor } from "../auth/session.ts";
 import { ApiError } from "../http.ts";
 import { getForecastClient } from "../forecast/client.ts";
 import { createDbDataSource } from "./data-source.ts";
+import { startWave } from "../outreach/service.ts";
+import { flushOutbox } from "../notifications/sender.ts";
 
 const STAFF_ROLES = new Set(["HOSPITAL_STAFF", "BLOOD_CENTRE_STAFF", "COORDINATOR", "ADMIN"]);
 
@@ -25,17 +27,27 @@ const globalStore = globalThis as unknown as { raktdootApprovals?: ApprovalStore
 /**
  * One draft store per server process (demo scope). Each request gets a view scoped
  * to the signed-in staff member, so safety re-checks follow their access rules.
- * TODO(M2): persist drafts in a Prisma table and dispatch approved drafts via outreach.
+ * Approved DONOR_OUTREACH drafts start the next real wave as the approving coordinator.
+ * DONATION_CAMPAIGN drafts are recorded only (campaign consent is a separate purpose
+ * that has not been designed yet, so nothing is sent).
  */
+const approverByDraft = new Map<string, ActorContext>();
 export function approvalsFor(actor: ActorContext): ApprovalStore {
   globalStore.raktdootApprovals ??= new ApprovalStore({
     data: createMockDataSource(), // never used directly; every caller goes through scoped()
     onApproved: async (draft) => {
-      // TODO(M2): hand to outreach waves / notifications. Nothing is sent yet.
-      console.info(`[copilot] draft ${draft.id} approved; dispatch not wired yet`);
+      const approver = approverByDraft.get(draft.id);
+      approverByDraft.delete(draft.id);
+      if (draft.kind !== "DONOR_OUTREACH" || !draft.requestId || !approver || process.env.COPILOT_DATA_SOURCE === "mock") return;
+      await startWave(approver, draft.requestId);
+      await flushOutbox();
     },
   });
-  return globalStore.raktdootApprovals.scoped(dataSourceFor(actor));
+  const scoped = globalStore.raktdootApprovals.scoped(dataSourceFor(actor));
+  // Remember who approves so the wave runs with their (scoped) authority.
+  const approve = scoped.approve.bind(scoped);
+  scoped.approve = async (id, role, note) => { approverByDraft.set(id, actor); try { return await approve(id, role, note); } finally { approverByDraft.delete(id); } };
+  return scoped;
 }
 
 export async function requireStaff(request: Request): Promise<ActorContext> {

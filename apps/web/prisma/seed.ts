@@ -43,7 +43,25 @@ try {
       }
     }
   }, { timeout: 30_000 });
-  console.log("Seed ready: 2 fictional hospitals, 15 fictional centres, 40 fictional donors, 3 scoped staff. No phone numbers or login secrets seeded.");
+  // Fictional sponsors and coupon codes for the rewards demo (shown only with FEATURE_TOKEN_REWARDS=true).
+  await db.$transaction(async (tx) => {
+    const sponsors = [
+      { id: "demo-sponsor-cafe", name: "Demo Café (fictional)", items: [{ id: "demo-item-coffee", title: "Free filter coffee", description: "One filter coffee at any Demo Café outlet.", costCoins: 50, prefix: "CAFE" }] },
+      { id: "demo-sponsor-pharmacy", name: "Demo Pharmacy (fictional)", items: [{ id: "demo-item-pharmacy", title: "10% off health essentials", description: "10% off one bill of up to ₹500.", costCoins: 100, prefix: "PHARMA" }] },
+      { id: "demo-sponsor-cinema", name: "Demo Cinemas (fictional)", items: [{ id: "demo-item-movie", title: "Movie ticket", description: "One weekday 2D movie ticket.", costCoins: 250, prefix: "MOVIE" }] },
+    ];
+    for (const s of sponsors) {
+      await tx.sponsor.upsert({ where: { id: s.id }, update: {}, create: { id: s.id, name: s.name, isSimulated: true } });
+      for (const it of s.items) {
+        await tx.storeItem.upsert({ where: { id: it.id }, update: {}, create: { id: it.id, sponsorId: s.id, title: it.title, description: it.description, costCoins: it.costCoins, isSimulated: true } });
+        for (let n = 1; n <= 20; n++) {
+          const code = `DEMO-${it.prefix}-${String(n).padStart(4, "0")}`;
+          await tx.couponCode.upsert({ where: { itemId_code: { itemId: it.id, code } }, update: {}, create: { itemId: it.id, code } });
+        }
+      }
+    }
+  }, { timeout: 30_000 });
+  console.log("Seed ready: 2 fictional hospitals, 15 fictional centres, 40 fictional donors, 3 scoped staff, 3 fictional sponsors with 60 demo coupons. No phone numbers or login secrets seeded.");
 } finally {
   await db.$disconnect();
 }
