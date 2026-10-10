@@ -8,6 +8,7 @@ A running log for the README, PPT and demo video. Add an entry after each meanin
 | 2 | Ideation | Read the hackathon brief PDF, checked feasibility (WhatsApp location, opt-in, 24 h window, Cline SDK, donor gift rules) | Verified feature table, pipelines |
 | 3 | Planning | Reworked plan per team decisions (manual location, in-chat consent, rewards policy, roles) | `docs/ROADMAP.md`, `USER_ROLES.md`, `REWARDS_POLICY.md` |
 | 4 | Scaffold | Created repository, `.clinerules`, shared domain rules and 16 passing tests | `packages/shared` |
+| 5 | M3 Forecast | Built FastAPI forecast service: synthetic 3-year generator, leakage-free features, quantile gradient boosting vs seasonal-naive, rolling-origin backtest, shortage risk, explainable drivers, contract-matching `/forecast`; 31 pytest tests. Model beats baseline by 23–28% MAE (synthetic) | `services/forecast/`, `data/seed/historical_demand_synthetic.csv` |
 
 ## Cline inside the product
 
