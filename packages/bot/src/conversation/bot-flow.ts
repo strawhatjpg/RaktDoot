@@ -6,7 +6,7 @@
  *                                  (donor) consents (alerts / reminders / location) → location → blood group
  * Global commands work at any step: STOP, START, HELP, LANGUAGE, STATUS, LOCATION, DELETE MY DATA, LOGIN <code>.
  */
-import type { BloodComponent, InboundMessage, LanguageCode, OutboundButton, OutboundMessage } from "@raktdoot/shared";
+import type { BloodComponent, ExtractedRequest, InboundMessage, LanguageCode, OutboundButton, OutboundMessage } from "@raktdoot/shared";
 import type { CoreApi } from "../core-api.ts";
 import type { LlmClient } from "../ai/llm-client.ts";
 import type { Transcriber } from "../ai/transcribe.ts";
@@ -14,8 +14,8 @@ import type { WhatsAppLogin } from "../auth/whatsapp-login.ts";
 import { parseLoginCommand } from "../auth/whatsapp-login.ts";
 import { detectLanguage } from "../ai/detect-language.ts";
 import { extractRequest, mergeFollowUp, computeMissing } from "../ai/extract-request.ts";
-import { normalizeBloodGroup } from "../ai/normalize.ts";
-import { formatIst } from "../ai/parse-time.ts";
+import { normalizeBloodGroup, normalizeComponent, normalizeUnits } from "../ai/normalize.ts";
+import { formatIst, parseNeededBy } from "../ai/parse-time.ts";
 import { t } from "../i18n/t.ts";
 import type { MessageKey } from "../i18n/messages.ts";
 import { DRAFT_TTL_MS, newState, type ConversationState, type IntakeField } from "./state.ts";
@@ -108,12 +108,55 @@ function nextQuestion(state: ConversationState): IntakeField | null {
   const missing = state.draft ? state.draft.missingFields : ASK_ORDER;
   for (const f of ASK_ORDER) {
     if (!missing.includes(f) || state.skipped.includes(f)) continue;
-    if ((state.asked[f] ?? 0) >= MAX_ASKS) {
-      if (OPTIONAL.includes(f)) continue;
-    }
+    // Optional fields are asked at most MAX_ASKS times; required ones until answered.
+    if (OPTIONAL.includes(f) && (state.asked[f] ?? 0) >= MAX_ASKS) continue;
     return f;
   }
   return null;
+}
+
+/**
+ * Interpret a short reply in the context of the question just asked ("2" → units,
+ * "6 pm" → neededBy). Returns true if the field was filled. Values are validated
+ * by the same deterministic normalisers used for full messages.
+ */
+export function answerField(state: ConversationState, field: IntakeField, body: string, now: Date): boolean {
+  const d = state.draft;
+  if (!d) return false;
+  const s = body.trim();
+  switch (field) {
+    case "units": {
+      const n = normalizeUnits(s);
+      if (n === null) return false;
+      d.units = { value: n, confidence: 1 };
+      break;
+    }
+    case "bloodGroup": {
+      const g = normalizeBloodGroup(s);
+      if (!g) return false;
+      d.bloodGroup = { value: g, confidence: 1 };
+      break;
+    }
+    case "component": {
+      const c = normalizeComponent(s);
+      if (!c) return false;
+      d.component = { value: c, confidence: 1 };
+      break;
+    }
+    case "neededBy": {
+      const iso = parseNeededBy(s, now);
+      if (!iso) return false;
+      d.neededBy = { value: iso, confidence: 1 };
+      break;
+    }
+    case "hospitalName": {
+      if (s.length < 3 || s.length > 120 || normalizeBloodGroup(s) || /^\d+$/.test(s)) return false;
+      d.hospitalName = { value: s, confidence: 1 };
+      break;
+    }
+  }
+  d.missingFields = computeMissing(d);
+  return true;
 }
 
 function askField(c: Ctx, field: IntakeField): OutboundMessage {
@@ -206,7 +249,8 @@ async function route(msg: InboundMessage, state: ConversationState, deps: BotDep
     return [text(c, "deleted")];
   }
   if (cmd === "HELP") return [text(c, "help")];
-  if (cmd === "LANGUAGE" || (cmd === "RESTART" && state.step === "NEW")) {
+  // (At step NEW, greetings fall through to first-contact handling so the script is detected.)
+  if (cmd === "LANGUAGE") {
     state.step = "LANG";
     return [languageButtons(c)];
   }
@@ -226,6 +270,8 @@ async function route(msg: InboundMessage, state: ConversationState, deps: BotDep
     state.firstScript = /[\u0900-\u097F]/u.test(body) ? "devanagari" : "latin";
     const guess = body ? detectLanguage(body) : null;
     if (guess && guess.language !== "en" && guess.confidence >= 0.6) state.lang = guess.language;
+    // "B+ 2 units at Ruby Hall" as the very first message: keep it, use it after onboarding.
+    if (body && looksLikeRequest(body)) state.pendingText = body.slice(0, 2000);
     state.step = "LANG";
     return [languageButtons({ ...c, lang: state.lang })];
   }
@@ -249,10 +295,17 @@ async function route(msg: InboundMessage, state: ConversationState, deps: BotDep
     if (button === BTN.TERMS_YES || button === BTN.YES) {
       state.termsAccepted = true;
       await core.recordConsent(msg.from, "TERMS", null, true, "whatsapp:button");
+      if (state.pendingText) {
+        const pending = state.pendingText;
+        delete state.pendingText;
+        await startIntake(c, state, msg, deps);
+        return stepHandlers({ ...msg, kind: "text", text: pending }, state, deps, now, c, pending, null);
+      }
       state.step = "ROLE";
       return [roleButtons(c)];
     }
     if (button === BTN.TERMS_NO || button === BTN.NO) {
+      delete state.pendingText;
       state.step = "DECLINED";
       return [text(c, "terms_declined")];
     }
@@ -278,12 +331,19 @@ async function route(msg: InboundMessage, state: ConversationState, deps: BotDep
     return [status ? { to: c.to, kind: "text", text: status } : text(c, "no_status")];
   }
   if (cmd === "LOCATION") {
+    // Return to whatever the user was doing afterwards (e.g. a half-finished request).
+    if (state.step !== "DONOR_LOCATION") state.resumeStep = state.step;
+    if (state.consents.location !== true) {
+      state.step = "CONSENT_LOCATION";
+      return [yesNo(c, "consent_location")];
+    }
     state.step = "DONOR_LOCATION";
     return [{ to: c.to, kind: "location_request", text: t(c.lang, "share_location") }];
   }
   if (cmd === "NEED" || button === BTN.ROLE_NEED) return startIntake(c, state, msg, deps);
   if (cmd === "DONATE" || button === BTN.ROLE_DONATE) {
     await core.upsertUser(msg.from, { role: "DONOR" });
+    state.role = "DONOR";
     state.step = "CONSENT_ALERTS";
     return [yesNo(c, "consent_alerts")];
   }
@@ -297,6 +357,7 @@ async function route(msg: InboundMessage, state: ConversationState, deps: BotDep
 
 async function startIntake(c: Ctx, state: ConversationState, msg: InboundMessage, deps: BotDeps): Promise<OutboundMessage[]> {
   await deps.core.upsertUser(msg.from, { role: "REQUESTER" });
+  state.role = "REQUESTER";
   delete state.draft;
   state.asked = {};
   state.skipped = [];
@@ -316,10 +377,7 @@ async function stepHandlers(
       return [yesNo(c, "consent_location")];
     }
     const { areaLabel } = await core.updateLocation(msg.from, { ...msg.location, ...(msg.location.label ? { areaLabel: msg.location.label } : {}), source: "WHATSAPP_SHARE" });
-    if (state.step === "DONOR_LOCATION") state.step = "DONOR_GROUP";
-    const out = [text(c, "location_saved", { area: areaLabel })];
-    if (state.step === "DONOR_GROUP") out.push(text(c, "donor_registered"));
-    return out;
+    return [text(c, "location_saved", { area: areaLabel }), ...afterLocation(c, state)];
   }
 
   switch (state.step) {
@@ -336,8 +394,12 @@ async function stepHandlers(
       const field = state.lastAsked;
       if (!state.draft || !field) return startIntake(c, state, msg, deps);
       if (button === BTN.NOT_SURE) {
-        applySkip(state, field);
-        return continueIntake(c, state);
+        // Only optional fields can be skipped; hospital, group and units are needed to act.
+        if (OPTIONAL.includes(field)) {
+          applySkip(state, field);
+          return continueIntake(c, state);
+        }
+        return [askField(c, field)];
       }
       if (field === "component" && button?.startsWith("comp:")) {
         if (button === BTN.COMP_OTHER) return [text(c, "ask_component")];
@@ -346,14 +408,16 @@ async function stepHandlers(
         return continueIntake(c, state);
       }
       if (!body) return [askField(c, field)];
-      // Short direct answers: treat as the asked field (e.g. "Ruby Hall" for hospital).
-      if (field === "hospitalName" && body.trim().length >= 3 && !normalizeBloodGroup(body)) {
-        state.draft.hospitalName = { value: body.trim().slice(0, 120), confidence: 0.9 };
-        state.draft.missingFields = computeMissing(state.draft);
-        return continueIntake(c, state);
+      // Longer replies may carry several fields ("O neg, 2 unit, Ruby Hall"): extract them all,
+      // then interpret a short reply as the answer to the question just asked ("2", "6 pm").
+      const fullSentence = body.trim().split(/\s+/).length > 3;
+      if (fullSentence) {
+        const next = await extractRequest(body, { llm: deps.llm, now, languageHint: state.lang });
+        state.draft = mergeFollowUp(state.draft, { ...next, language: state.lang });
       }
-      const next = await extractRequest(body, { llm: deps.llm, now, languageHint: state.lang });
-      state.draft = mergeFollowUp(state.draft, { ...next, language: state.lang });
+      if (!fullSentence || state.draft.missingFields.includes(field)) {
+        if (!answerField(state, field, body, now) && !fullSentence) return [askField(c, field)];
+      }
       return continueIntake(c, state);
     }
 
@@ -387,7 +451,8 @@ async function stepHandlers(
       if (body) {
         // Free-text correction on the confirm card ("units 3 hai").
         const next = await extractRequest(body, { llm: deps.llm, now, languageHint: state.lang });
-        state.draft = mergeFollowUp(d, { ...next, language: state.lang });
+        // A correction must override, so it is applied at full confidence.
+        state.draft = mergeFollowUp(d, boost({ ...next, language: state.lang }));
         return continueIntake(c, state);
       }
       return [confirmCard(c, state)];
@@ -419,8 +484,7 @@ async function stepHandlers(
         state.step = "DONOR_LOCATION";
         return [text(c, "consent_saved"), { to: c.to, kind: "location_request", text: t(c.lang, "share_location") }];
       }
-      state.step = "DONOR_GROUP";
-      return [text(c, "consent_saved"), text(c, "donor_registered")];
+      return [text(c, "consent_saved"), ...afterLocation(c, state)];
     }
 
     case "DONOR_LOCATION": {
@@ -431,14 +495,14 @@ async function stepHandlers(
       }
       // Typed area name: M2 geocodes against the seeded city areas.
       const { areaLabel } = await core.updateLocation(msg.from, { lat: 0, lng: 0, areaLabel: body.trim().slice(0, 80), source: "MANUAL_ENTRY" });
-      state.step = "DONOR_GROUP";
-      return [text(c, "location_saved", { area: areaLabel }), text(c, "donor_registered")];
+      return [text(c, "location_saved", { area: areaLabel }), ...afterLocation(c, state)];
     }
 
     case "DONOR_GROUP": {
       const group = normalizeBloodGroup(body);
       if (!group) return [text(c, "ask_bloodGroup")];
       await core.updateDonor(msg.from, { bloodGroup: group });
+      state.donorRegistered = true;
       state.step = "IDLE";
       return [text(c, "consent_saved"), text(c, "help")];
     }
@@ -449,11 +513,45 @@ async function stepHandlers(
     default: {
       if (msg.kind !== "text" && msg.kind !== "audio" && msg.kind !== "button") return [text(c, "unsupported")];
       // IDLE: a free-text message that looks like a blood request starts intake directly.
-      if (body && (normalizeBloodGroup(body) || /(blood|khoon|khun|रक्त|खून|platelet|प्लेटलेट)/iu.test(body))) {
+      if (body && looksLikeRequest(body)) {
         await startIntake(c, state, msg, deps);
         return stepHandlers(msg, state, deps, now, c, body, button);
       }
       return [text(c, "fallback")];
     }
   }
+}
+
+/** A message that already describes a blood need. */
+export function looksLikeRequest(body: string): boolean {
+  return !!normalizeBloodGroup(body) || /(blood|khoon|khun|रक्त|खून|platelet|प्लेटलेट|plasma|प्लाज़्मा|प्लाझ्मा)/iu.test(body);
+}
+
+/** A user correction must win over earlier values, so give its found fields full confidence. */
+function boost(r: ExtractedRequest): ExtractedRequest {
+  const up = <T>(f: { value: T | null; confidence: number }) => (f.value === null ? f : { value: f.value, confidence: 1 });
+  return { ...r, hospitalName: up(r.hospitalName), bloodGroup: up(r.bloodGroup), component: up(r.component), units: up(r.units), neededBy: up(r.neededBy) };
+}
+
+/**
+ * Where to go after a location update. During donor sign-up → ask blood group.
+ * If LOCATION was typed mid-way through something else → resume that step.
+ */
+function afterLocation(c: Ctx, state: ConversationState): OutboundMessage[] {
+  const resume = state.resumeStep;
+  delete state.resumeStep;
+  if (resume && resume !== "DONOR_LOCATION" && resume !== "CONSENT_LOCATION") {
+    state.step = resume;
+    if (resume === "CONFIRM" && state.draft) return [confirmCard(c, state)];
+    if (resume === "FOLLOW_UP" && state.draft && state.lastAsked) return [askField(c, state.lastAsked)];
+    if (resume === "INTAKE") return [text(c, "describe_need")];
+    if (resume === "ROLE") return [roleButtons(c)];
+    return [];
+  }
+  if (state.role === "DONOR" && !state.donorRegistered) {
+    state.step = "DONOR_GROUP";
+    return [text(c, "donor_registered")];
+  }
+  state.step = "IDLE";
+  return [];
 }

@@ -27,14 +27,30 @@ function clamp01(n: unknown): number {
 export function ruleHospital(text: string): string | null {
   const m =
     /([A-Z][\w.'&-]*(?:\s+[A-Z][\w.'&-]*){0,4}\s+(?:Hospital|Medical College|Clinic|Nursing Home|Institute))/u.exec(text) ??
-    /((?:[\p{L}\p{M}]+\s+){1,3}(?:अस्पताल|रुग्णालय|हॉस्पिटल))/u.exec(text);
-  return m ? m[1]!.trim() : null;
+    /((?:[\p{L}\p{M}.'&-]+\s+){1,3}(?:hospital|hosptl|hospitl|medical college|clinic|nursing home|अस्पताल|रुग्णालय|हॉस्पिटल|रुग्णालयात))/iu.exec(text);
+  if (!m) return null;
+  // Drop leading filler words ("papa", "mere", "my", "at"...) captured before the name.
+  const words = m[1]!.trim().split(/\s+/);
+  while (words.length > 1 && FILLER.has(words[0]!.toLowerCase())) words.shift();
+  return words.length > 1 ? words.join(" ") : null; // a bare "hospital" is not a name
 }
+
+const FILLER = new Set([
+  "papa", "mummy", "maa", "bhai", "my", "the", "at", "in", "is", "admitted", "admit", "mere", "meri", "mera",
+  "ko", "ke", "ki", "liye", "hain", "hai", "father", "mother", "patient", "abhi", "ji",
+  "मेरे", "मेरी", "पापा", "माँ", "मां", "के", "की", "को", "लिए", "माझ्या", "माझे", "बाबा", "बाबांना", "आईला", "आई", "रुग्ण",
+]);
 
 export function ruleBasedExtract(text: string, now: Date = new Date()): Omit<ExtractedRequest, "language" | "missingFields" | "originalText"> {
   const group = normalizeBloodGroup(text);
   const component = normalizeComponent(text);
-  const unitMatch = /(\d{1,2}|[०-९]{1,2}|ek|do|teen|char|chaar|paanch|one|two|three|four|five|एक|दो|तीन|चार|पांच|दोन)\s*(units?|unt|bottles?|botal|yunit|यूनिट|युनिट|बोतल|बाटली|पिशव्या)/iu.exec(foldText(text));
+  const NUM = "(\\d{1,2}|ek|do|teen|char|chaar|paanch|one|two|three|four|five|एक|दो|तीन|चार|पांच|दोन)";
+  const UNIT = "(?:units?|unt|bottles?|botal|yunit|यूनिट|युनिट|बोतल|बाटली|पिशव्या)";
+  const folded = foldText(text);
+  // "2 unit" or "units: 3" / "unit 3 hai"
+  const unitMatch =
+    new RegExp(`${NUM}\\s*${UNIT}`, "iu").exec(folded) ??
+    new RegExp(`${UNIT}\\s*[:=-]?\\s*${NUM}(?![\\p{L}\\d])`, "iu").exec(folded);
   const units = unitMatch ? normalizeUnits(unitMatch[1]!) : null;
   const hospital = ruleHospital(text);
   const neededBy = parseNeededBy(text, now);
@@ -73,8 +89,9 @@ export function validateAiOutput(raw: unknown, now: Date): Omit<ExtractedRequest
     if (Number.isFinite(t) && t > now.getTime() - 864e5 && t < now.getTime() + 30 * 864e5) neededBy = new Date(t).toISOString();
   }
 
+  // A model-reported confidence (including 0) is respected; only a missing one defaults to 0.7.
   const field = <T>(value: T | null, key: string): ExtractedField<T> =>
-    value === null ? none<T>() : { value, confidence: clamp01(conf[key]) || 0.7 };
+    value === null ? none<T>() : { value, confidence: typeof conf[key] === "number" ? clamp01(conf[key]) : 0.7 };
 
   return {
     hospitalName: field(hospital, "hospitalName"),
@@ -85,10 +102,12 @@ export function validateAiOutput(raw: unknown, now: Date): Omit<ExtractedRequest
   };
 }
 
-function merge<T>(ai: ExtractedField<T>, rule: ExtractedField<T>): ExtractedField<T> {
+function merge<T>(ai: ExtractedField<T>, rule: ExtractedField<T>, freeText = false): ExtractedField<T> {
   if (ai.value === null) return rule;
   if (rule.value === null) return ai;
   if (ai.value === rule.value) return { value: ai.value, confidence: Math.max(ai.confidence, rule.confidence, 0.9) };
+  // Free text (hospital names) differs in wording, not meaning: trust the AI's cleaner span.
+  if (freeText) return ai;
   // Disagreement: keep AI value but force a confirmation question.
   return { value: ai.value, confidence: Math.min(ai.confidence, 0.5) };
 }
@@ -119,7 +138,7 @@ export async function extractRequest(text: string, opts: ExtractOptions = {}): P
       ]);
       const ai = validateAiOutput(raw, now);
       fields = {
-        hospitalName: merge(ai.hospitalName, rules.hospitalName),
+        hospitalName: merge(ai.hospitalName, rules.hospitalName, true),
         bloodGroup: merge(ai.bloodGroup, rules.bloodGroup),
         component: merge(ai.component, rules.component),
         units: merge(ai.units, rules.units),

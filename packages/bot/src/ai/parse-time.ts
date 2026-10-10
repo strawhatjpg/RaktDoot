@@ -4,18 +4,23 @@
  */
 const IST_OFFSET_MS = 330 * 60 * 1000;
 
-const TODAY = /(today|aaj|आज)/u;
-const TOMORROW = /(tomorrow|kal subah|kal|कल|उद्या|udya)/u;
-const NOW = /(\basap\b|urgent|turant|abhi|अभी|तुरंत|लगेच|immediately|right now)/u;
-const MORNING = /(morning|subah|सुबह|सकाळी)/u;
-const EVENING = /(evening|shaam|sham|शाम|संध्याकाळी|संध्याकाळ)/u;
-const NIGHT = /(night|raat|रात|रात्री)/u;
-const AFTERNOON = /(afternoon|dopahar|दोपहर|दुपारी)/u;
+/** Whole-word match that also works for Devanagari (JS \b does not). "Kalyani" ≠ "kal", "Abhishek" ≠ "abhi". */
+const word = (alts: string) => new RegExp(`(?<![\\p{L}\\p{M}])(?:${alts})(?![\\p{L}\\p{M}])`, "u");
+
+const TODAY = word("today|aaj|आज");
+const TOMORROW = word("tomorrow|kal|कल|उद्या|udya");
+const MORNING = word("morning|subah|सुबह|सकाळी");
+const EVENING = word("evening|shaam|sham|शाम|संध्याकाळी|संध्याकाळ|संध्याकाळपर्यंत");
+const NIGHT = word("night|raat|रात|रात्री");
+const AFTERNOON = word("afternoon|dopahar|दोपहर|दुपारी");
+// Note: "urgent"/"asap" are deliberately NOT turned into a deadline — urgency is a clinical
+// judgement. The bot asks "by when?" and the family states a time.
 
 /** Returns { hour, minute } in IST if a clock time is stated. */
 function clockTime(text: string): { h: number; m: number } | null {
-  const m = /\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|baje|बजे|वाजता)?\b/u.exec(text) ?? /(\d{1,2})(?:[:.](\d{2}))?\s*(बजे|वाजता)/u.exec(text);
-  if (!m || !m[3]) return null;
+  // Suffix is required so "2 unit" is never read as 2 o'clock.
+  const m = /(?<![\d:.])(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|baje|बजे|वाजता)(?![\p{L}\p{M}])/u.exec(text);
+  if (!m) return null;
   let h = Number(m[1]);
   const min = m[2] ? Number(m[2]) : 0;
   if (h > 23 || min > 59) return null;
@@ -29,8 +34,6 @@ function clockTime(text: string): { h: number; m: number } | null {
 export function parseNeededBy(input: string, now: Date = new Date()): string | null {
   const text = input.toLowerCase();
   const istNow = new Date(now.getTime() + IST_OFFSET_MS);
-  if (NOW.test(text)) return new Date(now.getTime() + 2 * 3600_000).toISOString();
-
   const dayOffset = TOMORROW.test(text) && !TODAY.test(text) ? 1 : TODAY.test(text) ? 0 : null;
   let clock = clockTime(text);
   if (!clock) {

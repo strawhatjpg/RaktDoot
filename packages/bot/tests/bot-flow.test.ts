@@ -19,7 +19,7 @@ function setup(llm: LlmClient | null = null) {
   return { core, deps, say, login };
 }
 
-async function onboard(say: ReturnType<typeof setup>["say"], first = "Papa ke liye blood chahiye", lang: string = BTN.LANG_HI) {
+async function onboard(say: ReturnType<typeof setup>["say"], first = "Namaste ji", lang: string = BTN.LANG_HI) {
   await say({ text: first });
   await say({ buttonId: lang });
   await say({ buttonId: BTN.TERMS_YES });
@@ -33,7 +33,7 @@ test("every language defines every message; button titles fit WhatsApp's 20-char
 
 test("Hinglish requester, no AI: follow-up for component, confirm, request created", async () => {
   const { core, say } = setup(null);
-  const first = await say({ text: "Papa ke liye blood chahiye" });
+  const first = await say({ text: "Namaste ji" });
   assert.equal(first[0]!.kind, "buttons", "language picker");
   await say({ buttonId: BTN.LANG_HI });
   const role = await say({ buttonId: BTN.TERMS_YES });
@@ -69,7 +69,7 @@ test("AI output is validated: bad values are dropped and re-asked, never trusted
     async completeText() { return ""; },
   };
   const { core, say } = setup(llm);
-  await onboard(say, "मेरे पापा अस्पताल में भर्ती हैं");
+  await onboard(say, "नमस्ते");
   await say({ buttonId: BTN.ROLE_NEED });
   const q = await say({ text: "Sassoon mein khoon chahiye" });
   // First message was Devanagari, so "Hindi" button → Devanagari replies.
