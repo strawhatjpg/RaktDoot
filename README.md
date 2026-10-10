@@ -31,14 +31,14 @@ See [`docs/USER_ROLES.md`](docs/USER_ROLES.md). In short: **anyone** can request
 
 ## Architecture
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/PIPELINES.md`](docs/PIPELINES.md).
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/PIPELINES.md`](docs/PIPELINES.md). Team split: [`docs/TEAM_PLAN.md`](docs/TEAM_PLAN.md).
 
 ## Tech stack (planned)
 
 - **Web app + API:** Next.js (TypeScript), PWA manifest + service worker, Web Push
 - **Database:** Prisma + SQLite (local) → PostgreSQL (deployed)
 - **Messaging:** WhatsApp Cloud API, with a built-in simulator as a demo fallback
-- **AI:** LLM API for multilingual extraction/translation, speech-to-text for voice notes, Cline SDK for the Copilot
+- **AI (free tiers):** Gemini API (primary) + Groq (fallback, Whisper speech-to-text), Cline SDK for the Copilot — see [`docs/FREE_STACK.md`](docs/FREE_STACK.md)
 - **Forecasting:** Python FastAPI + scikit-learn (gradient boosting with quantiles)
 
 ## Repository layout

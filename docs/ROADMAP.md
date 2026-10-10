@@ -40,8 +40,8 @@ Cut order if late: voice → partner pages → push (keep WhatsApp) → recognit
 
 ## Open decisions
 
-1. LLM provider (Gemini / OpenAI / Anthropic) — test Indian-language quality in hour 1.
-2. WhatsApp route: Meta Cloud API test number (recommended) or Twilio sandbox.
+1. ~~LLM provider~~ → decided: free tiers only, Gemini primary + Groq fallback (`FREE_STACK.md`).
+2. ~~WhatsApp route~~ → decided: Meta Cloud API test number (free within the 24 h window).
 3. Pilot city and regional language.
 4. Confirm with organisers whether code may be written before the 8-hour window.
 5. Check the name "RaktDoot" is not taken.
