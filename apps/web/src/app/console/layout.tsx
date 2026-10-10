@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Brand } from "../../components/Drop.tsx";
-import { IconChart, IconChat, IconHome, IconInbox, IconLogout } from "../../components/icons.tsx";
+import { IconChart, IconChat, IconHome, IconInbox, IconLogout, IconShield } from "../../components/icons.tsx";
 import { useRequireSession } from "../../components/Session.tsx";
 import { Chip, Empty } from "../../components/Ui.tsx";
 import { isStaff } from "../../lib/api.ts";
@@ -14,6 +14,8 @@ const LINKS = [
   { href: "/console/forecast", label: "Forecast", Icon: IconChart },
   { href: "/console/copilot", label: "Copilot", Icon: IconChat },
   { href: "/console/drafts", label: "Approvals", Icon: IconInbox },
+  // M2's verification queue, explained matches, outreach waves and closed-loop actions.
+  { href: "/dashboard", label: "Verify & outreach", Icon: IconShield },
 ] as const;
 
 const ROLE: Record<string, string> = { COORDINATOR: "Coordinator", ADMIN: "Admin", HOSPITAL_STAFF: "Hospital staff", BLOOD_CENTRE_STAFF: "Blood centre staff" };

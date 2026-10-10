@@ -44,7 +44,9 @@ export const api = {
   demoAccounts: () => call<{ enabled: boolean; accounts: DemoAccount[] }>("/api/auth/demo"),
   demoLogin: (userId: string) => call<{ ok: true }>("/api/auth/demo", post({ userId })),
   waStart: () => call<{ code: string; link: string | null; expiresAt: string; botConfigured: boolean }>("/api/auth/whatsapp/start", { method: "POST" }),
-  waPoll: (code: string) => call<{ status: "pending" | "confirmed" | "expired" }>(`/api/auth/whatsapp/poll?code=${code}`),
+  waPoll: (code: string) => call<{ status: "pending" | "confirmed" | "expired" }>("/api/auth/whatsapp/poll", post({ code })),
+  /** M2: which sign-in methods this server has configured (Google, WhatsApp, demo). */
+  signInMethods: () => call<{ methods: { google: boolean; whatsapp: boolean; demo: boolean } }>("/api/auth/session").then((r) => r.methods),
 
   // Requests + discovery (M2)
   hospitals: () => call<{ hospitals: HospitalDTO[] }>("/api/centres").then((r) => r.hospitals),
@@ -55,6 +57,9 @@ export const api = {
     call<{ request: BloodRequestDTO; replayed: boolean }>("/api/requests", post(input, { "Idempotency-Key": idempotencyKey })),
   myRequests: () => call<{ requests: BloodRequestDTO[] }>("/api/requests").then((r) => r.requests),
   request: (id: string) => call<BloodRequestDetailDTO>(`/api/requests/${encodeURIComponent(id)}`),
+  /** M2: requesters may only cancel; staff close as FULFILLED once units are issued. */
+  closeRequest: (id: string, outcome: "CANCELLED" | "FULFILLED") =>
+    call<{ id: string; status: "CLOSED"; outcome: string }>(`/api/requests/${encodeURIComponent(id)}/close`, post({ outcome })),
 
   // Donor (M2)
   consent: () => call<ConsentStateDTO>("/api/consent"),

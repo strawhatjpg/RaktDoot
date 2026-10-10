@@ -1,8 +1,9 @@
 # apps/web
 
-Next.js App Router app: the M4 PWA (families + donors), the staff console, and the
-M2 core API. Verification actions, matching, waves, reminders and the worker are
-**not implemented yet** (the UI shows those steps as pending).
+Next.js App Router app: the M4 PWA (families + donors), the staff console, the M2
+core API (verification, matching, outreach waves, closed loop, rewards) and the M1
+WhatsApp bot wiring. Run `npm.cmd run worker` for reminders and wave timers, and
+`npm.cmd run test:demo` for the full end-to-end rehearsal.
 
 ## M4 frontend (quick start)
 
@@ -22,15 +23,23 @@ cd services/forecast; python -m venv .venv; .venv\Scripts\pip install -r require
 | App (signed in) | `/home`, `/request/new` (AI text/voice intake → nearby centres → confirm), `/requests`, `/track/{id}` (refreshes every 15 s), `/donor` (onboarding, availability, ~1 km location, consents) |
 | Console (verified staff) | `/console` briefing, `/console/forecast`, `/console/copilot`, `/console/drafts` (approve/edit/reject) |
 
-Frontend-only routes added by M4 (all in `src/app/api/`, logic in `src/server/auth/login.ts`):
+M2 pages that live alongside the M4 app: `/dashboard` (verification queue, explained
+matches, outreach waves, closing; linked from the console sidebar as "Verify & outreach"),
+`/demo` (WhatsApp inbox), `/rewards`, `/r/{code}` (referral), `/terms`.
+
+Auth and bot routes used by the M4 frontend (M1 wiring in `src/server/bot/`, M2 sessions):
 
 | Method | Route | Notes |
 |---|---|---|
-| POST / GET | `/api/auth/whatsapp/start`, `/api/auth/whatsapp/poll?code=` | M1 login code → M2 session cookie; first login creates a REQUESTER |
-| GET / POST | `/api/auth/demo` | **Only** when `DEMO_MODE=true` and not production; POST needs same-origin `Origin` = `APP_BASE_URL`; fixed seeded IDs only |
-| GET / POST | `/api/auth/me`, `/api/auth/logout` | Current user / revoke session |
-| POST | `/api/simulator` | `{ from, text \| buttonId \| location }` → bot replies (in-memory, nothing sent) |
+| POST | `/api/auth/whatsapp/start` | → `{ code, link, expiresAt, botConfigured }` + HttpOnly cookie binding the code to this browser. Without `WHATSAPP_BOT_NUMBER`, `link` is null and the code is sent from `/simulator` (dev, or `SIMULATOR_ENABLED=true`) |
+| POST | `/api/auth/whatsapp/poll` | `{ code }` → `pending` / `expired` / `confirmed` + session cookie; only the browser that started the login can complete it |
+| GET / POST | `/api/auth/demo` | GET lists the demo accounts; POST signs in. **Only** when `DEMO_MODE=true` and not production; same-origin `Origin` = `APP_BASE_URL`; fixed seeded IDs only |
+| GET / DELETE | `/api/auth/session` | M2: who am I + configured sign-in methods (Google, WhatsApp, demo) / sign out |
+| GET / POST | `/api/auth/me`, `/api/auth/logout` | M4: current user (role, verified, district) / revoke session |
+| GET | `/api/auth/google/start?returnTo=` | M2 Google sign-in; the login page shows it only when configured |
+| POST | `/api/simulator` | `{ from, text \| buttonId \| location }` → bot replies (same bot as the webhook) |
 | POST | `/api/intake/extract` | `{ text }` → M1 extraction (rules; LLM when Gemini/Groq keys are set) |
+| POST | `/api/requests/{id}/close` | Requesters may cancel from `/track/{id}`; staff close as FULFILLED |
 
 Without `WHATSAPP_BOT_NUMBER`, "Log in with WhatsApp" hands the code to `/simulator`.
 Without Gemini/Groq keys, the Copilot page shows a setup message; everything else still works.

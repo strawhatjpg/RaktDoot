@@ -1,5 +1,6 @@
 "use client";
-// "Log in with WhatsApp" (M1's code flow, M2's sessions) + demo accounts in DEMO_MODE.
+// "Log in with WhatsApp" (M1's code flow, M2's sessions), Google (M2, when configured)
+// and demo accounts in DEMO_MODE.
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -20,8 +21,10 @@ function LoginInner() {
   const [code, setCode] = useState<Code | null>(null);
   const [expired, setExpired] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [google, setGoogle] = useState(false);
   const poller = useRef<ReturnType<typeof setInterval> | null>(null);
-  const next = params.get("next");
+  // M4 pages use ?next=, M2's pages (/r/<code>, /dashboard, /rewards) use ?returnTo=.
+  const next = params.get("next") ?? params.get("returnTo");
 
   const goNext = useCallback(async () => {
     const user = await refresh();
@@ -31,6 +34,12 @@ function LoginInner() {
 
   useEffect(() => { if (me) void goNext(); }, [me, goNext]);
   useEffect(() => () => { if (poller.current) clearInterval(poller.current); }, []);
+  useEffect(() => { api.signInMethods().then((m) => setGoogle(m.google)).catch(() => setGoogle(false)); }, []);
+  useEffect(() => {
+    const err = params.get("error");
+    if (err) toast(err === "not_configured" ? "Google sign-in is not configured on this server" : "Google sign-in did not complete. Please try again.", { error: true });
+  }, [params, toast]);
+  const googleHref = `/api/auth/google/start?returnTo=${encodeURIComponent(next && next.startsWith("/") && !next.startsWith("//") ? next : "/home")}`;
 
   async function startWhatsApp() {
     setBusy(true);
@@ -89,6 +98,9 @@ function LoginInner() {
               )}
               {!code.botConfigured && <p className="tiny faint" style={{ margin: 0 }}>No WhatsApp number is configured on this server, so use the simulator. It runs the same bot.</p>}
             </div>
+          )}
+          {google && (!code || expired) && (
+            <a href={googleHref} className="btn btn-ghost btn-block">Continue with Google</a>
           )}
         </section>
 

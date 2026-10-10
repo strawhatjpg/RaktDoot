@@ -76,9 +76,32 @@ enum StockStatus {
   RESERVED
 }
 
+enum InviteStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+  PAUSED
+  EXPIRED
+  STOOD_DOWN
+  ARRIVED
+  DONATED
+  DEFERRED
+  WITHDRAWN
+}
+
+enum NotificationStatus {
+  PENDING
+  SENDING
+  SENT
+  SIMULATED
+  FAILED
+  CANCELLED
+}
+
 model User {
   id                String    @id @default(cuid())
   phone             String?   @unique
+  email             String?   @unique
   name              String
   preferredLanguage String    @default("en")
   role              UserRole  @default(REQUESTER)
@@ -94,6 +117,40 @@ model User {
   requests          BloodRequest[]
   events            RequestEvent[]
   audits            AuditLog[]
+  oauthAccounts     OAuthAccount[]
+  invites           OutreachInvite[]
+  notifications     Notification[]
+  awards            RecognitionAward[]
+  reminderLogs      ReminderLog[]
+  wallet            Wallet?
+  coinEntries       CoinEntry[]
+  referralCode      ReferralCode?
+  referralsMade     Referral[]        @relation("Referrer")
+  referredBy        Referral?         @relation("Referred")
+  redemptions       Redemption[]
+}
+
+model OAuthAccount {
+  id        String   @id @default(cuid())
+  provider  String
+  subject   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([provider, subject])
+  @@index([userId])
+}
+
+/** WhatsApp conversation state, keyed by the verified sender number. */
+model BotConversation {
+  phone            String   @id
+  state            String
+  pendingLat       Float?
+  pendingLng       Float?
+  pendingAreaLabel String?
+  pendingSource    String?
+  updatedAt        DateTime @updatedAt
 }
 
 model Session {
@@ -205,10 +262,17 @@ model BloodRequest {
   isSimulated    Boolean            @default(false)
   idempotencyKey String
   payloadHash    String
+  verifiedById   String?
+  verifiedAt     DateTime?
+  /** Donors currently committed (accepted/arrived/donated). Claimed atomically. */
+  acceptedCount  Int                @default(0)
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
   events         RequestEvent[]
   consents       Consent[]
+  waves          OutreachWave[]
+  invites        OutreachInvite[]
+  fulfilments    FulfilmentRecord[]
 
   @@unique([requesterId, idempotencyKey])
   @@index([hospitalId, status, createdAt])
@@ -222,6 +286,8 @@ model RequestEvent {
   actor      User          @relation(fields: [actorId], references: [id])
   fromStatus RequestStatus?
   toStatus   RequestStatus
+  kind       String        @default("STATUS_CHANGED")
+  note       String?
   createdAt  DateTime      @default(now())
 
   @@index([requestId, createdAt])
@@ -237,4 +303,206 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   @@index([entity, entityId, createdAt])
+}
+
+model OutreachWave {
+  id          String           @id @default(cuid())
+  requestId   String
+  request     BloodRequest     @relation(fields: [requestId], references: [id])
+  waveNumber  Int
+  radiusKm    Float
+  size        Int
+  startedById String
+  startedAt   DateTime         @default(now())
+  closesAt    DateTime
+  closedAt    DateTime?
+  invites     OutreachInvite[]
+
+  @@unique([requestId, waveNumber])
+  @@index([closedAt, closesAt])
+}
+
+model OutreachInvite {
+  id          String            @id @default(cuid())
+  waveId      String
+  wave        OutreachWave      @relation(fields: [waveId], references: [id])
+  requestId   String
+  request     BloodRequest      @relation(fields: [requestId], references: [id])
+  donorId     String
+  donor       User              @relation(fields: [donorId], references: [id])
+  score       Float
+  distanceKm  Float
+  reasons     String
+  status      InviteStatus      @default(INVITED)
+  respondedAt DateTime?
+  arrivedAt   DateTime?
+  donatedAt   DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  award       RecognitionAward?
+
+  @@unique([requestId, donorId])
+  @@index([donorId, status])
+  @@index([requestId, status])
+}
+
+/** Durable outbox. Every outbound WhatsApp message goes through here. */
+model Notification {
+  id                String              @id @default(cuid())
+  userId            String?
+  user              User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  toPhone           String
+  channel           NotificationChannel
+  purpose           String
+  payload           String
+  status            NotificationStatus  @default(PENDING)
+  attempts          Int                 @default(0)
+  lastError         String?
+  providerMessageId String?
+  requestId         String?
+  inviteId          String?
+  dedupeKey         String              @unique
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  sentAt            DateTime?
+
+  @@index([status, createdAt])
+  @@index([toPhone, createdAt])
+  @@index([inviteId])
+}
+
+/** Units actually issued for a request. Required before closing as FULFILLED. */
+model FulfilmentRecord {
+  id           String       @id @default(cuid())
+  requestId    String
+  request      BloodRequest @relation(fields: [requestId], references: [id])
+  units        Int
+  source       String
+  recordedById String
+  note         String?
+  createdAt    DateTime     @default(now())
+
+  @@index([requestId])
+}
+
+model RecognitionAward {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  code      String         @unique
+  inviteId  String         @unique
+  invite    OutreachInvite @relation(fields: [inviteId], references: [id])
+  awardedAt DateTime       @default(now())
+
+  @@index([userId])
+}
+
+model ReminderLog {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dueAt          DateTime
+  notificationId String?
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, dueAt])
+}
+
+// ---------------------------------------------------------------- rewards
+
+/** Balance is a column so redemptions can debit atomically (balance >= cost). */
+model Wallet {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance   Int      @default(0)
+  updatedAt DateTime @updatedAt
+}
+
+/** Append-only ledger. refKey makes every award/debit idempotent. */
+model CoinEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  reason    String
+  refKey    String   @unique
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model ReferralCode {
+  code      String   @id
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Referral {
+  id                 String    @id @default(cuid())
+  referrerId         String
+  referrer           User      @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referredUserId     String    @unique
+  referred           User      @relation("Referred", fields: [referredUserId], references: [id], onDelete: Cascade)
+  createdAt          DateTime  @default(now())
+  donorRewardedAt    DateTime?
+  donationRewardedAt DateTime?
+
+  @@index([referrerId, createdAt])
+}
+
+model Sponsor {
+  id          String      @id @default(cuid())
+  name        String
+  website     String?
+  isSimulated Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  items       StoreItem[]
+}
+
+model StoreItem {
+  id           String       @id @default(cuid())
+  sponsorId    String
+  sponsor      Sponsor      @relation(fields: [sponsorId], references: [id])
+  title        String
+  description  String
+  costCoins    Int
+  perUserLimit Int          @default(1)
+  active       Boolean      @default(true)
+  isSimulated  Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  coupons      CouponCode[]
+  redemptions  Redemption[]
+}
+
+/** Sponsor-supplied codes; each is handed to exactly one redeemer. */
+model CouponCode {
+  id           String      @id @default(cuid())
+  itemId       String
+  item         StoreItem   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  code         String
+  redeemedById String?
+  redeemedAt   DateTime?
+  redemption   Redemption?
+
+  @@unique([itemId, code])
+  @@index([itemId, redeemedById])
+}
+
+model Redemption {
+  id             String     @id @default(cuid())
+  userId         String
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  itemId         String
+  item           StoreItem  @relation(fields: [itemId], references: [id])
+  couponId       String     @unique
+  coupon         CouponCode @relation(fields: [couponId], references: [id])
+  coins          Int
+  idempotencyKey String
+  createdAt      DateTime   @default(now())
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, itemId])
 }

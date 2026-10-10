@@ -7,14 +7,16 @@ import { CentreList } from "../../../../components/CentreList.tsx";
 import { IconRefresh, IconShield, IconWhatsApp } from "../../../../components/icons.tsx";
 import { Journey } from "../../../../components/Journey.tsx";
 import { useRequireSession } from "../../../../components/Session.tsx";
+import { useToast } from "../../../../components/Toast.tsx";
 import { Chip, ErrorCard, PageHeader, SimulatedNote, Skeleton } from "../../../../components/Ui.tsx";
-import { api, ApiFailure } from "../../../../lib/api.ts";
+import { api, ApiFailure, isStaff } from "../../../../lib/api.ts";
 import { COMPONENT_LABEL, STATUS_LABEL, VERIFICATION_LABEL, formatWhen, shortId, timeAgo } from "../../../../lib/format.ts";
 
 function TrackInner() {
   const { id } = useParams<{ id: string }>();
   const isNew = useSearchParams().get("new") === "1";
   const { me } = useRequireSession();
+  const toast = useToast();
   const [data, setData] = useState<BloodRequestDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState(() => new Date().toISOString());
@@ -23,6 +25,15 @@ function TrackInner() {
     try { setData(await api.request(id)); setError(null); setUpdatedAt(new Date().toISOString()); }
     catch (e) { setError(e instanceof ApiFailure ? (e.status === 404 ? "This case was not found or you don't have access." : e.message) : "Could not load the case"); }
   }, [id]);
+
+  const [cancelling, setCancelling] = useState(false);
+  async function cancel() {
+    if (!window.confirm("Cancel this request? Donors who were alerted will be told it is no longer needed.")) return;
+    setCancelling(true);
+    try { await api.closeRequest(id, "CANCELLED"); toast("Request cancelled"); await load(); }
+    catch (e) { toast(e instanceof ApiFailure ? e.message : "Could not cancel", { error: true }); }
+    finally { setCancelling(false); }
+  }
 
   useEffect(() => {
     if (!me) return;
@@ -85,6 +96,11 @@ function TrackInner() {
         <IconWhatsApp width={22} style={{ color: "#25d366", flex: "0 0 auto" }} />
         <span className="muted">Donors never see your phone number. They respond on WhatsApp and go to a licensed blood centre with your case ID.</span>
       </div>
+      {r.status !== "CLOSED" && !isStaff(me) && (
+        <button className="btn btn-ghost btn-block" onClick={() => void cancel()} disabled={cancelling}>
+          {cancelling ? "Cancelling…" : "No longer needed? Cancel this request"}
+        </button>
+      )}
       {r.isSimulated && <SimulatedNote />}
     </div>
   );

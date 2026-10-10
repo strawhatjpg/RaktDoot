@@ -16,6 +16,7 @@ export const MESSAGE_KEYS = [
   "share_location", "location_saved", "donor_registered", "ai_unavailable", "voice_failed",
   "stopped", "deleted", "help", "login_ok", "login_bad", "fallback", "safety_note",
   "terms_declined", "invite_accepted", "invite_declined", "invite_paused", "unsupported", "resumed", "no_status",
+  "hospital_not_found",
 ] as const;
 export type MessageKey = (typeof MESSAGE_KEYS)[number];
 
@@ -50,7 +51,7 @@ const en: Catalog = {
   ai_unavailable: "I couldn't fully understand that. Please answer the questions below.",
   voice_failed: "Sorry, I couldn't hear the voice note clearly. Please type your message.",
   stopped: "You won't receive alerts or reminders anymore. Type START to turn them back on.",
-  deleted: "Your data deletion request is recorded. We will delete your profile within 7 days.",
+  deleted: "Your personal data (number, consents, location, donor profile) has been deleted. Type HI if you want to start again.",
   help: "Commands: NEED BLOOD · DONATE · STATUS · LOCATION · STOP · DELETE MY DATA · LANGUAGE",
   login_ok: "✅ You're logged in to the RaktDoot app. You can return to the browser.",
   login_bad: "That login code is invalid or expired. Please get a new code in the app.",
@@ -63,6 +64,7 @@ const en: Catalog = {
   unsupported: "I can read text, voice notes and locations. Please send one of those.",
   resumed: "Welcome back! Alerts and reminders are on again for the options you agreed to.",
   no_status: "You have no open request. Type NEED BLOOD to create one.",
+  hospital_not_found: "I couldn't find that hospital in our list, so nothing was submitted yet. Please send the full hospital name (e.g. {examples}).",
 };
 
 const hiLatn: Catalog = {
@@ -94,7 +96,7 @@ const hiLatn: Catalog = {
   ai_unavailable: "Main poori tarah samajh nahi paaya. Kripya neeche ke sawaalon ka jawab dein.",
   voice_failed: "Maaf kijiye, voice note saaf sunai nahi diya. Kripya likhkar bhejein.",
   stopped: "Ab aapko alerts ya reminders nahi milenge. Wapas chalu karne ke liye START likhein.",
-  deleted: "Data delete karne ki request darj ho gayi. 7 din mein profile delete ho jayegi.",
+  deleted: "Aapka personal data (number, consent, location, donor profile) delete kar diya gaya hai. Dobara shuru karne ke liye HI likhein.",
   help: "Commands: NEED BLOOD · DONATE · STATUS · LOCATION · STOP · DELETE MY DATA · LANGUAGE",
   login_ok: "✅ Aap RaktDoot app mein login ho gaye. Browser par wapas jaayein.",
   login_bad: "Login code galat ya expire ho gaya hai. App se naya code lein.",
@@ -107,6 +109,7 @@ const hiLatn: Catalog = {
   unsupported: "Main text, voice note aur location padh sakta hoon. Kripya inmein se kuch bhejein.",
   resumed: "Wapas swagat hai! Jin options par aap sahmat the, unke alerts aur reminders phir chalu hain.",
   no_status: "Aapki koi open request nahi hai. Nayi request ke liye NEED BLOOD likhein.",
+  hospital_not_found: "Yeh hospital hamari list mein nahi mila, isliye abhi kuch submit nahi hua. Kripya hospital ka poora naam bhejein (jaise {examples}).",
 };
 
 const hi: Catalog = {
@@ -138,7 +141,7 @@ const hi: Catalog = {
   ai_unavailable: "मैं पूरी तरह समझ नहीं पाया। कृपया नीचे के सवालों का जवाब दें।",
   voice_failed: "माफ़ कीजिए, वॉइस नोट साफ़ सुनाई नहीं दिया। कृपया लिखकर भेजें।",
   stopped: "अब आपको अलर्ट या रिमाइंडर नहीं मिलेंगे। फिर से चालू करने के लिए START लिखें।",
-  deleted: "डेटा हटाने का अनुरोध दर्ज हो गया। 7 दिनों में प्रोफ़ाइल हटा दी जाएगी।",
+  deleted: "आपका निजी डेटा (नंबर, सहमति, लोकेशन, डोनर प्रोफ़ाइल) हटा दिया गया है। फिर से शुरू करने के लिए HI लिखें।",
   help: "कमांड: NEED BLOOD · DONATE · STATUS · LOCATION · STOP · DELETE MY DATA · LANGUAGE",
   login_ok: "✅ आप रक्तदूत ऐप में लॉगिन हो गए। ब्राउज़र पर वापस जाएँ।",
   login_bad: "लॉगिन कोड गलत है या समाप्त हो गया है। ऐप से नया कोड लें।",
@@ -151,6 +154,7 @@ const hi: Catalog = {
   unsupported: "मैं टेक्स्ट, वॉइस नोट और लोकेशन पढ़ सकता हूँ। कृपया इनमें से कुछ भेजें।",
   resumed: "फिर से स्वागत है! जिन विकल्पों पर आप सहमत थे, उनके अलर्ट और रिमाइंडर फिर से चालू हैं।",
   no_status: "आपकी कोई खुली रिक्वेस्ट नहीं है। नई रिक्वेस्ट के लिए NEED BLOOD लिखें।",
+  hospital_not_found: "यह अस्पताल हमारी सूची में नहीं मिला, इसलिए अभी कुछ जमा नहीं हुआ। कृपया अस्पताल का पूरा नाम भेजें (जैसे {examples})।",
 };
 
 export const CATALOGS: Record<"en" | "hi" | "hi-Latn", Catalog> = { en, hi, "hi-Latn": hiLatn };
