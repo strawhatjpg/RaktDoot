@@ -12,6 +12,6 @@ export { detectLanguage } from "./ai/detect-language.ts";
 export { translate } from "./ai/translate.ts";
 export { createGroqTranscriber, type Transcriber } from "./ai/transcribe.ts";
 export { createWhatsAppLogin, createMemoryLoginStore, type LoginCodeStore, type WhatsAppLogin } from "./auth/whatsapp-login.ts";
-export { createMockCoreApi, type CoreApi, type CreateRequestInput } from "./core-api.ts";
+export { createMockCoreApi, REQUEST_NOT_CREATED, type CoreApi, type CreateRequestInput } from "./core-api.ts";
 export { t } from "./i18n/t.ts";
 export { createBotFromEnv } from "./create-bot.ts";

@@ -25,9 +25,12 @@ function clamp01(n: unknown): number {
 
 /** Rule-based hospital guess: text around "hospital"/"अस्पताल"/"रुग्णालय". */
 export function ruleHospital(text: string): string | null {
+  // Optional branch/number right after the word ("Demo Hospital 1", "City Hospital No. 2"),
+  // but not a quantity or time ("Hospital 2 unit", "Hospital 6 baje").
+  const NUM = String.raw`(?:\s+(?:[Nn][Oo]\.?\s*)?\d{1,3}(?![\d:.]|\s*(?:units?|unt|bottles?|botal|yunit|यूनिट|युनिट|बोतल|बाटली|baje|बजे|वाजता|am|pm)(?![\p{L}])))?`;
   const m =
-    /([A-Z][\w.'&-]*(?:\s+[A-Z][\w.'&-]*){0,4}\s+(?:Hospital|Medical College|Clinic|Nursing Home|Institute))/u.exec(text) ??
-    /((?:[\p{L}\p{M}.'&-]+\s+){1,3}(?:hospital|hosptl|hospitl|medical college|clinic|nursing home|अस्पताल|रुग्णालय|हॉस्पिटल|रुग्णालयात))/iu.exec(text);
+    new RegExp(String.raw`([A-Z][\w.'&-]*(?:\s+[A-Z][\w.'&-]*){0,4}\s+(?:Hospital|Medical College|Clinic|Nursing Home|Institute)${NUM})`, "u").exec(text) ??
+    new RegExp(String.raw`((?:[\p{L}\p{M}.'&-]+\s+){1,3}(?:hospital|hosptl|hospitl|medical college|clinic|nursing home|अस्पताल|रुग्णालय|हॉस्पिटल|रुग्णालयात)${NUM})`, "iu").exec(text);
   if (!m) return null;
   // Drop leading filler words ("papa", "mere", "my", "at"...) captured before the name.
   const words = m[1]!.trim().split(/\s+/);
