@@ -11,8 +11,15 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "test": "node --test \"packages/shared/tests/*.test.ts\"",
-    "typecheck": "echo Typecheck is added with the TypeScript toolchain during the coding phase."
+    "test": "node --test \"packages/shared/tests/*.test.ts\" \"packages/bot/tests/*.test.ts\"",
+    "evals": "node evals/multilingual/run-evals.ts",
+    "evals:ai": "node --env-file=.env evals/multilingual/run-evals.ts --ai",
+    "bot:chat": "node --env-file-if-exists=.env packages/bot/scripts/chat.ts",
+    "typecheck": "tsc -p packages/shared/tsconfig.json --types node && tsc -p packages/bot/tsconfig.json --types node"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
+  }
 }

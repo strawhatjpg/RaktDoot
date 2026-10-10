@@ -1,0 +1,32 @@
+{"id":"en-001","lang":"en","input":"Need 2 units of B+ packed red cells at Ruby Hall Hospital by 6 pm today","expected":{"bloodGroup":"B+","component":"PACKED_RED_CELLS","units":2,"hospital":"Ruby Hall"}}
+{"id":"en-002","lang":"en","input":"Urgent! O negative blood needed for my mother at Sassoon General Hospital, 3 units","expected":{"bloodGroup":"O-","component":null,"units":3,"hospital":"Sassoon"}}
+{"id":"en-003","lang":"en","input":"Dengue patient needs platelets, AB positive, 4 units, Jehangir Hospital","expected":{"bloodGroup":"AB+","component":"PLATELETS","units":4,"hospital":"Jehangir"}}
+{"id":"en-004","lang":"en","input":"my father admitted in Deenanath Mangeshkar Hospital need A-ve 1 unit","expected":{"bloodGroup":"A-","component":null,"units":1,"hospital":"Deenanath Mangeshkar"}}
+{"id":"en-005","lang":"en","input":"Plasma required FFP 2 units O+ at KEM Hospital tomorrow morning","expected":{"bloodGroup":"O+","component":"PLASMA","units":2,"hospital":"KEM"}}
+{"id":"en-006","lang":"en","input":"need blood for surgery at Noble Hospital","expected":{"bloodGroup":null,"component":null,"units":null,"hospital":"Noble"}}
+{"id":"en-007","lang":"en","input":"B group blood needed 2 units at Poona Hospital","expected":{"bloodGroup":null,"component":null,"units":2,"hospital":"Poona"}}
+{"id":"en-008","lang":"en","input":"Whole blood 1 unit AB- required at Bharati Hospital asap","expected":{"bloodGroup":"AB-","component":"WHOLE_BLOOD","units":1,"hospital":"Bharati"}}
+{"id":"hiL-001","lang":"hi-Latn","input":"Papa Ruby Hall Hospital mein admit hain, B positive ke 2 unit chahiye","expected":{"bloodGroup":"B+","component":null,"units":2,"hospital":"Ruby Hall"}}
+{"id":"hiL-002","lang":"hi-Latn","input":"bhai mummy ko O+ve platelets chahiye 3 unit, Jehangir Hospital mein hai, jaldi","expected":{"bloodGroup":"O+","component":"PLATELETS","units":3,"hospital":"Jehangir"}}
+{"id":"hiL-003","lang":"hi-Latn","input":"Sassoon Hospital me AB negative khoon chahiye do unit aaj raat tak","expected":{"bloodGroup":"AB-","component":null,"units":2,"hospital":"Sassoon"}}
+{"id":"hiL-004","lang":"hi-Latn","input":"meri wife delivery ke liye KEM Hospital mein hai, A+ PRBC 2 unit ki zaroorat hai","expected":{"bloodGroup":"A+","component":"PACKED_RED_CELLS","units":2,"hospital":"KEM"}}
+{"id":"hiL-005","lang":"hi-Latn","input":"o neg chaiye 1 unit Noble Hospital urgent hai","expected":{"bloodGroup":"O-","component":null,"units":1,"hospital":"Noble"}}
+{"id":"hiL-006","lang":"hi-Latn","input":"Dengue hai, platlet chahiye B+ ke, Deenanath Mangeshkar Hospital","expected":{"bloodGroup":"B+","component":"PLATELETS","units":null,"hospital":"Deenanath Mangeshkar"}}
+{"id":"hiL-007","lang":"hi-Latn","input":"kal subah tak plasma chahiye 2 unit A negative, Bharati Hospital","expected":{"bloodGroup":"A-","component":"PLASMA","units":2,"hospital":"Bharati"}}
+{"id":"hiL-008","lang":"hi-Latn","input":"blood chahiye papa ke liye, hospital mein bharti hain","expected":{"bloodGroup":null,"component":null,"units":null,"hospital":null}}
+{"id":"hiL-009","lang":"hi-Latn","input":"Poona Hospital mein teen unit B+ve blood chahiye bhaiya","expected":{"bloodGroup":"B+","component":null,"units":3,"hospital":"Poona"}}
+{"id":"hiL-010","lang":"hi-Latn","input":"AB+ ya B+ koi bhi chalega 2 unit Ruby Hall Hospital","expected":{"bloodGroup":null,"component":null,"units":2,"hospital":"Ruby Hall"}}
+{"id":"hi-001","lang":"hi","input":"मेरे पापा रूबी हॉल अस्पताल में भर्ती हैं, बी पॉजिटिव के 2 यूनिट चाहिए","expected":{"bloodGroup":"B+","component":null,"units":2,"hospital":"रूबी हॉल"}}
+{"id":"hi-002","lang":"hi","input":"ससून अस्पताल में ओ नेगेटिव प्लेटलेट्स के ३ यूनिट तुरंत चाहिए","expected":{"bloodGroup":"O-","component":"PLATELETS","units":3,"hospital":"ससून"}}
+{"id":"hi-003","lang":"hi","input":"माँ के ऑपरेशन के लिए AB+ खून चाहिए, दो यूनिट, केईएम अस्पताल","expected":{"bloodGroup":"AB+","component":null,"units":2,"hospital":"केईएम"}}
+{"id":"hi-004","lang":"hi","input":"जहांगीर हॉस्पिटल में A- प्लाज्मा 1 यूनिट कल सुबह तक","expected":{"bloodGroup":"A-","component":"PLASMA","units":1,"hospital":"जहांगीर"}}
+{"id":"hi-005","lang":"hi","input":"खून चाहिए, जल्दी मदद करें","expected":{"bloodGroup":null,"component":null,"units":null,"hospital":null}}
+{"id":"hi-006","lang":"hi","input":"नोबल अस्पताल में बी नेगेटिव पीआरबीसी चार यूनिट चाहिए","expected":{"bloodGroup":"B-","component":"PACKED_RED_CELLS","units":4,"hospital":"नोबल"}}
+{"id":"mr-001","lang":"mr","input":"माझ्या बाबांना रूबी हॉल रुग्णालयात बी पॉझिटिव्ह रक्ताच्या २ युनिट पाहिजे आहेत","expected":{"bloodGroup":"B+","component":null,"units":2,"hospital":"रूबी हॉल"}}
+{"id":"mr-002","lang":"mr","input":"ससून रुग्णालयात ओ नेगेटिव्ह प्लेटलेट्स ३ युनिट लवकर हवे आहेत","expected":{"bloodGroup":"O-","component":"PLATELETS","units":3,"hospital":"ससून"}}
+{"id":"mr-003","lang":"mr","input":"आईला केईएम रुग्णालयात AB+ प्लाझ्मा दोन युनिट हवा आहे","expected":{"bloodGroup":"AB+","component":"PLASMA","units":2,"hospital":"केईएम"}}
+{"id":"mr-004","lang":"mr","input":"रक्त हवे आहे, कृपया मदत करा","expected":{"bloodGroup":null,"component":null,"units":null,"hospital":null}}
+{"id":"mr-005","lang":"mr","input":"जहांगीर हॉस्पिटल मध्ये A- रक्त १ युनिट उद्या सकाळी पाहिजे","expected":{"bloodGroup":"A-","component":null,"units":1,"hospital":"जहांगीर"}}
+{"id":"voice-001","lang":"hi-Latn","input":"haan ji ruby hall hospital mein hain papa unko b positive chahiye do unit","expected":{"bloodGroup":"B+","component":null,"units":2,"hospital":"ruby hall"}}
+{"id":"voice-002","lang":"hi","input":"नमस्ते जी ससून हॉस्पिटल में ओ पॉजिटिव प्लेटलेट्स चाहिए तीन यूनिट","expected":{"bloodGroup":"O+","component":"PLATELETS","units":3,"hospital":"ससून"}}
+{"id":"typo-001","lang":"hi-Latn","input":"rubyhall hosptl me b+ve 2 unt chaiye","expected":{"bloodGroup":"B+","component":null,"units":2,"hospital":"ruby"}}
