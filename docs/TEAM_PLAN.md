@@ -25,7 +25,7 @@ Goal: four people build at the same time without blocking each other or causing 
 
 | Member | Folders / files |
 |---|---|
-| M1 | `apps/web/src/server/channels/`, `conversation/`, `ai/`, `auth/whatsapp-login.ts`, `apps/web/src/app/api/whatsapp/`, `apps/web/src/app/api/auth/`, `packages/shared/i18n/`, `evals/multilingual/` |
+| M1 | `packages/bot/` (channels, conversation, ai, i18n, WhatsApp login), `evals/multilingual/`, plus the thin route files `apps/web/src/app/api/{whatsapp,simulator,auth}/` once M2's scaffold lands |
 | M2 | `apps/web/` scaffold + config, `prisma/`, `src/server/{requests,centres,matching,outreach,donors,consent,reminders,notifications,recognition}/`, `src/server/{db,audit}.ts`, `scripts/worker.ts`, `src/app/api/{requests,centres,donors,outreach,consent,recognition,notifications}/`, `data/seed/`, `packages/shared/src/` |
 | M3 | `services/forecast/`, `src/server/forecast/`, `src/server/copilot/`, `src/app/api/{forecast,copilot}/` |
 | M4 | `src/app/(public)/`, `(app)/`, `(dashboard)/`, `simulator/` page UI, `src/components/`, `public/` (manifest, service worker, icons), `README.md`, `docs/PITCH_OUTLINE.md`, `docs/DEMO_SCRIPT.md` |

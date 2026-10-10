@@ -11,10 +11,17 @@
     "node": ">=22.18.0"
   },
   "scripts": {
-    "test": "node --test \"packages/shared/tests/*.test.ts\" \"packages/copilot/tests/*.test.ts\"",
+    "test": "node --test \"packages/shared/tests/*.test.ts\" \"packages/bot/tests/*.test.ts\" \"packages/copilot/tests/*.test.ts\"",
     "test:forecast": "cd services/forecast && .venv/bin/python -m pytest -q",
-    "typecheck": "npm run typecheck -w @raktdoot/copilot",
-    "copilot:demo": "npm run demo -w @raktdoot/copilot --"
+    "evals": "node evals/multilingual/run-evals.ts",
+    "evals:ai": "node --env-file=.env evals/multilingual/run-evals.ts --ai",
+    "bot:chat": "node --env-file-if-exists=.env packages/bot/scripts/chat.ts",
+    "copilot:demo": "npm run demo -w @raktdoot/copilot --",
+    "typecheck": "tsc -p packages/shared/tsconfig.json --types node && tsc -p packages/bot/tsconfig.json --types node && npm run typecheck -w @raktdoot/copilot"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
+  }
 }
