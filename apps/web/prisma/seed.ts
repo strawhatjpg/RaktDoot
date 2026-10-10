@@ -1,4 +1,4 @@
-import { BLOOD_GROUPS, coarsenCoordinates } from "@raktdoot/shared";
+import { BLOOD_GROUPS, CURRENT_TERMS_VERSION, coarsenCoordinates } from "@raktdoot/shared";
 import { getDb } from "../src/server/db.ts";
 
 if (process.env.DEMO_MODE !== "true" || process.env.NODE_ENV === "production") {
@@ -31,12 +31,13 @@ try {
     }
     for (let i = 1; i <= 40; i++) {
       const id = `demo-donor-${i}`;
-      await tx.user.upsert({ where: { id }, update: {}, create: { id, name: `Fictional Donor ${i}`, role: "REQUESTER", isSimulated: true, donorProfile: { create: { bloodGroup: BLOOD_GROUPS[(i - 1) % BLOOD_GROUPS.length], sex: i % 2 ? "MALE" : "FEMALE", availability: i % 5 ? "AVAILABLE" : "PAUSED", lastDonationAt: i % 4 ? null : new Date(Date.now() - 20 * 86_400_000) } } } });
+      const recentDonor = i % 4 === 0;
+      await tx.user.upsert({ where: { id }, update: {}, create: { id, name: `Fictional Donor ${i}`, role: "REQUESTER", isSimulated: true, donorProfile: { create: { bloodGroup: BLOOD_GROUPS[(i - 1) % BLOOD_GROUPS.length], sex: i % 2 ? "MALE" : "FEMALE", availability: i % 5 ? "AVAILABLE" : "PAUSED", lastDonationAt: recentDonor ? new Date(Date.now() - 20 * 86_400_000) : null, lastDonationSource: recentDonor ? "SYNTHETIC_SEED" : null } } } });
       if (await tx.consent.count({ where: { userId: id } }) === 0) {
         await tx.consent.createMany({ data: [
-          { userId: id, type: "TERMS", granted: true, source: "SYNTHETIC_SEED", termsVersion: "demo-v1" },
-          { userId: id, type: "LOCATION_STORAGE", granted: true, source: "SYNTHETIC_SEED", termsVersion: "demo-v1" },
-          { userId: id, type: "URGENT_ALERTS", channel: "APP_PUSH", granted: i % 3 !== 0, source: "SYNTHETIC_SEED", termsVersion: "demo-v1" },
+          { userId: id, type: "TERMS", granted: true, source: "SYNTHETIC_SEED", termsVersion: CURRENT_TERMS_VERSION },
+          { userId: id, type: "LOCATION_STORAGE", granted: true, source: "SYNTHETIC_SEED", termsVersion: CURRENT_TERMS_VERSION },
+          { userId: id, type: "URGENT_ALERTS", channel: "APP_PUSH", granted: i % 3 !== 0, source: "SYNTHETIC_SEED", termsVersion: CURRENT_TERMS_VERSION },
         ] });
         await tx.donorLocation.upsert({ where: { userId: id }, update: {}, create: { userId: id, ...coarsenCoordinates({ lat: 18.51 + i * 0.002, lng: 73.84 + i * 0.002 }), areaLabel: "Synthetic Pune area", source: "MANUAL_ENTRY" } });
       }

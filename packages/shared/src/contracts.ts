@@ -4,8 +4,11 @@
  * Owner: Member 2 (core backend). Types only, so every stream can code against them immediately.
  */
 import type {
+  Availability,
   BloodComponent,
   BloodGroup,
+  ConsentType,
+  DonorSex,
   FinalOutcome,
   LocationSource,
   NotificationChannel,
@@ -98,6 +101,67 @@ export interface RequestEventDTO {
 export interface BloodRequestDetailDTO {
   request: BloodRequestDTO;
   events: RequestEventDTO[];
+}
+
+// ---------- Member 2: consent and donor APIs ----------
+
+export interface ConsentUpdateItem {
+  type: Exclude<ConsentType, "CONTACT_SHARING">;
+  /** Required for URGENT_ALERTS and DONATION_REMINDERS; null for TERMS and LOCATION_STORAGE. */
+  channel: NotificationChannel | null;
+  granted: boolean;
+}
+
+/** termsVersion must equal the version of the notice the user was actually shown. */
+export interface ConsentUpdateInput {
+  termsVersion: string;
+  updates: ConsentUpdateItem[];
+}
+
+export interface ConsentStateDTO {
+  currentTermsVersion: string;
+  consents: Array<{ type: ConsentType; channel: NotificationChannel | null; granted: boolean; recordedAt: string; termsVersion: string }>;
+}
+
+export interface DonorRegistrationInput {
+  bloodGroup: BloodGroup;
+  sex: DonorSex;
+  travelRadiusKm: number;
+  /** The donor confirms they are 18 or older; screening at the centre is still final. */
+  ageConfirmed: true;
+  /** Optional self-reported last donation (UTC ISO). Can only move the date forward. */
+  lastDonationAt?: string;
+}
+
+export interface AvailabilityUpdateInput {
+  availability: Availability;
+  /** Required only for UNAVAILABLE. */
+  unavailableUntil?: string;
+}
+
+export interface DonorLocationDTO {
+  lat: number;
+  lng: number;
+  areaLabel: string | null;
+  source: LocationSource;
+  updatedAt: string;
+  needsUpdate: boolean;
+}
+
+export interface DonorProfileDTO {
+  bloodGroup: BloodGroup;
+  sex: DonorSex;
+  travelRadiusKm: number;
+  availability: Availability;
+  /** What matching uses: expired UNAVAILABLE is reported as PAUSED. */
+  effectiveAvailability: Availability;
+  unavailableUntil: string | null;
+  availabilityUpdatedAt: string;
+  lastDonationAt: string | null;
+  lastDonationSource: string | null;
+  /** Provisional whole-blood review date only; never a medical eligibility decision. */
+  provisionalNextReviewAt: string | null;
+  location: DonorLocationDTO | null;
 }
 
 export interface BloodRequestDTO {

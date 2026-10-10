@@ -1,7 +1,7 @@
 # apps/web
 
 Next.js App Router scaffold and Member 2 core API. The PWA screens, WhatsApp login,
-verification actions, matching, waves and worker are **not implemented yet**.
+verification actions, matching, waves, reminders and worker are **not implemented yet**.
 
 ## Setup (from repository root, PowerShell)
 
@@ -34,6 +34,42 @@ production mode and require explicit `DEMO_MODE=true`.
 | POST | `/api/requests` | Session + `Idempotency-Key` required |
 | GET | `/api/requests` | Session; latest 50 **own** requests only |
 | GET | `/api/requests/{id}` | Owner or verified, scoped staff |
+| GET | `/api/consent` | Session; own latest consent per purpose/channel + current terms version |
+| POST | `/api/consent` | Session; append consent grants/withdrawals |
+| GET / PUT | `/api/donors` | Session; own donor profile only (PUT creates 201 or updates 200) |
+| PUT | `/api/donors/availability` | Session; AVAILABLE / PAUSED / UNAVAILABLE(+end date) |
+| PUT / DELETE | `/api/donors/location` | Session + LOCATION_STORAGE consent; stored at ~1 km |
+
+### Consent and donor examples
+
+```json
+POST /api/consent
+{ "termsVersion": "2026-10-v1", "updates": [
+  { "type": "TERMS", "channel": null, "granted": true },
+  { "type": "URGENT_ALERTS", "channel": "WHATSAPP", "granted": true },
+  { "type": "LOCATION_STORAGE", "channel": null, "granted": true } ] }
+
+PUT /api/donors
+{ "bloodGroup": "O-", "sex": "FEMALE", "travelRadiusKm": 10, "ageConfirmed": true }
+
+PUT /api/donors/availability
+{ "availability": "UNAVAILABLE", "unavailableUntil": "2030-01-10T00:00:00.000Z" }
+
+PUT /api/donors/location
+{ "lat": 18.5204, "lng": 73.8567, "source": "APP_GPS", "areaLabel": "Shivajinagar" }
+```
+
+Consent rules: `termsVersion` must match the notice shown (409 otherwise). Other
+purposes need accepted terms. `URGENT_ALERTS` and `DONATION_REMINDERS` are per channel.
+`CONTACT_SHARING` is rejected here; it will be granted per request on acceptance.
+Withdrawing terms withdraws all purposes, deletes location and pauses the donor.
+Withdrawing location storage deletes the stored location immediately.
+
+Donor rules: registration requires accepted terms and age confirmation; new donors
+start PAUSED. Expired UNAVAILABLE is reported as PAUSED (never silently AVAILABLE).
+Self-reported last donation can only move forward. `provisionalNextReviewAt` is a
+whole-blood reminder date, not a medical eligibility decision. Location must be in
+India; the web API accepts APP_GPS / MANUAL_ENTRY only (WhatsApp pins come via M1).
 
 Example POST body (use a future date, canonical UTC ISO with milliseconds):
 

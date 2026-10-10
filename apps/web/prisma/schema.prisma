@@ -157,6 +157,8 @@ model DonorProfile {
   availabilityUpdatedAt DateTime     @default(now())
   unavailableUntil      DateTime?
   lastDonationAt        DateTime?
+  /** SELF_REPORTED, SYNTHETIC_SEED or (future) CENTRE_CONFIRMED. */
+  lastDonationSource    String?
   location              DonorLocation?
 }
 

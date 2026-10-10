@@ -14,7 +14,7 @@ try {
   run([resolve("../../node_modules/prisma/build/index.js"), "migrate", "deploy"]);
   run(["prisma/seed.ts"]);
   run(["prisma/seed.ts"]); // Seed idempotency is checked below.
-  run(["--test", "tests/core.test.ts", "tests/http.test.ts"]);
+  run(["--test", "--test-concurrency=1", "tests/core.test.ts", "tests/http.test.ts", "tests/donors.test.ts"]);
 } finally {
   await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 }
