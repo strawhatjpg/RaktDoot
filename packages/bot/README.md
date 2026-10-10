@@ -46,6 +46,12 @@ requests are not written to the DB). Mapping notes are in `docs/M2_HANDOFF.md`.
 Donor alerts from outreach waves: send `kind: "buttons"` with button ids `invite:<inviteId>:accept|decline|pause`;
 the bot forwards taps to `core.respondToInvite`.
 
+## CoreApi conventions (agreed with M2)
+
+- `updateLocation`: a WhatsApp pin has real `lat/lng`; a **typed area has `lat/lng = NaN`** (never 0,0) and `source: "MANUAL_ENTRY"`.
+- `createRequest`: return `{ id: REQUEST_NOT_CREATED, trackUrl }` when nothing was created (e.g. hospital not in the directory).
+  Put example hospital names in `trackUrl` as `(e.g. A, B)`. The bot keeps the draft and asks only for the hospital again.
+
 ## Known limits
 
 - Eval cases were written by the team (and the rules were tuned while debugging), so the offline 100% is optimistic; add unseen messages from testers before quoting a number.

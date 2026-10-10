@@ -7,7 +7,7 @@
  * Global commands work at any step: STOP, START, HELP, LANGUAGE, STATUS, LOCATION, DELETE MY DATA, LOGIN <code>.
  */
 import type { BloodComponent, ExtractedRequest, InboundMessage, LanguageCode, OutboundButton, OutboundMessage } from "@raktdoot/shared";
-import type { CoreApi } from "../core-api.ts";
+import { REQUEST_NOT_CREATED, type CoreApi } from "../core-api.ts";
 import type { LlmClient } from "../ai/llm-client.ts";
 import type { Transcriber } from "../ai/transcribe.ts";
 import type { WhatsAppLogin } from "../auth/whatsapp-login.ts";
@@ -436,6 +436,16 @@ async function stepHandlers(
           language: state.lang,
           originalText: d.originalText,
         });
+        if (created.id === REQUEST_NOT_CREATED) {
+          // Hospital not in the directory: keep everything else, ask only for the hospital again.
+          const examples = /\(e\.g\.\s*([^)]{1,200})\)/.exec(created.trackUrl)?.[1]?.trim() ?? "—";
+          d.hospitalName = { value: null, confidence: 0 };
+          d.missingFields = computeMissing(d);
+          state.step = "FOLLOW_UP";
+          state.lastAsked = "hospitalName";
+          state.asked.hospitalName = (state.asked.hospitalName ?? 0) + 1;
+          return [text(c, "hospital_not_found", { examples })];
+        }
         delete state.draft;
         state.step = "IDLE";
         return [text(c, "request_submitted", { id: created.id, url: created.trackUrl }), text(c, "safety_note")];
@@ -493,8 +503,8 @@ async function stepHandlers(
         state.step = "CONSENT_LOCATION";
         return [yesNo(c, "consent_location")];
       }
-      // Typed area name: M2 geocodes against the seeded city areas.
-      const { areaLabel } = await core.updateLocation(msg.from, { lat: 0, lng: 0, areaLabel: body.trim().slice(0, 80), source: "MANUAL_ENTRY" });
+      // Typed area name: no coordinates (NaN, never a fake 0,0 pin). M2 resolves the label.
+      const { areaLabel } = await core.updateLocation(msg.from, { lat: Number.NaN, lng: Number.NaN, areaLabel: body.trim().slice(0, 80), source: "MANUAL_ENTRY" });
       return [text(c, "location_saved", { area: areaLabel }), ...afterLocation(c, state)];
     }
 

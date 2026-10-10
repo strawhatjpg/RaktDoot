@@ -25,6 +25,13 @@ export interface CreateRequestInput {
   originalText: string;
 }
 
+/**
+ * createRequest returns this id when nothing was created (e.g. hospital not in the directory).
+ * The bot then keeps the draft and asks for the hospital again. Any text after the first
+ * line of `trackUrl` may carry example hospital names as "(e.g. A, B)".
+ */
+export const REQUEST_NOT_CREATED = "NOT CREATED";
+
 export interface CoreApi {
   getState(phone: string): Promise<ConversationState | null>;
   saveState(phone: string, state: ConversationState): Promise<void>;
@@ -65,7 +72,13 @@ export function createMockCoreApi(baseUrl = "http://localhost:3000"): MockCoreAp
     },
     async updateDonor() {},
     async updateLocation(phone, loc) {
-      const coarse = loc.lat || loc.lng ? coarsenCoordinates({ lat: loc.lat, lng: loc.lng }) : { lat: 0, lng: 0 };
+      // Typed areas arrive without coordinates (NaN); only real pins are coarsened.
+      const hasPin = Number.isFinite(loc.lat) && Number.isFinite(loc.lng);
+      if (!hasPin) {
+        locations.push({ phone, ...loc });
+        return { areaLabel: loc.areaLabel ?? "your area" };
+      }
+      const coarse = coarsenCoordinates({ lat: loc.lat, lng: loc.lng });
       locations.push({ phone, ...loc, ...coarse });
       return { areaLabel: loc.areaLabel ?? `${coarse.lat}, ${coarse.lng}` };
     },
