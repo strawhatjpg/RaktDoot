@@ -27,7 +27,8 @@ const LETTER = "(ab|a|b|o|0|एबी|ए बी|ए|बी|ओ)";
 const POS_WORDS = "\\+\\s*ve|\\+|positive|positve|posetive|pos|ve\\s*\\+|पॉजिटिव्ह|पॉजिटिव|पॉज़िटिव|पोजिटिव|पॉझिटिव्ह|पॉझिटिव";
 const NEG_WORDS = "-\\s*ve|-|negative|negetive|neg|ve\\s*-|नेगेटिव्ह|नेगेटिव|निगेटिव|नेगेटीव";
 const GROUP_RE = new RegExp(
-  `(?<![\\p{L}\\p{M}\\d])${LETTER}\\s*(${POS_WORDS}|${NEG_WORDS})(?![\\p{L}\\p{M}])`,
+  // Sign must not be followed by a letter or digit: "Wing A-2" / "B-12" are addresses, not blood groups.
+  `(?<![\\p{L}\\p{M}\\d])${LETTER}\\s*(${POS_WORDS}|${NEG_WORDS})(?![\\p{L}\\p{M}\\d])`,
   "gu",
 );
 const LETTER_MAP: Record<string, "A" | "B" | "AB" | "O"> = {

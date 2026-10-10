@@ -55,6 +55,6 @@ export async function POST(req: Request) {
 
 ## Known limits
 
-- Eval cases were written by the team, so the offline score is optimistic; add real-style messages from testers.
+- Eval cases were written by the team (and the rules were tuned while debugging), so the offline 100% is optimistic; add unseen messages from testers before quoting a number.
 - Marathi and Hindi strings need a native-speaker review before a real pilot.
 - Typed area names are stored as labels; geocoding them is M2's job.
