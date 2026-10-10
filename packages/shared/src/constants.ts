@@ -1,5 +1,5 @@
 /**
- * Shared domain vocabulary for RaktSetu.
+ * Shared domain vocabulary for RaktDoot.
  * Uses `as const` arrays (not TS enums) so files run directly with Node type stripping.
  */
 

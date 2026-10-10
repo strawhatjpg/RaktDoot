@@ -44,4 +44,4 @@ Cut order if late: voice → partner pages → push (keep WhatsApp) → recognit
 2. WhatsApp route: Meta Cloud API test number (recommended) or Twilio sandbox.
 3. Pilot city and regional language.
 4. Confirm with organisers whether code may be written before the 8-hour window.
-5. Check the name "RaktSetu" is not taken.
+5. Check the name "RaktDoot" is not taken.

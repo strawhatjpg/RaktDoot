@@ -1,4 +1,4 @@
-# RaktSetu — from blood request to confirmed response
+# RaktDoot — from blood request to confirmed response
 
 > WhatsApp-first blood access coordination for India. Built for the **Cline AI Builder Hackathon (Round 2)**.
 
@@ -6,7 +6,7 @@
 
 ## Problem
 
-When a patient needs blood urgently, families often turn fragmented listings, uncertain stock information and forwarded donor appeals into dozens of phone calls. Registered donor lists go stale, appeals keep circulating after they are resolved, and most tools assume English literacy and a form-filling mindset. Existing infrastructure such as eRaktKosh lists blood centres and stock; RaktSetu complements it with **coordination**: it does not replace it.
+When a patient needs blood urgently, families often turn fragmented listings, uncertain stock information and forwarded donor appeals into dozens of phone calls. Registered donor lists go stale, appeals keep circulating after they are resolved, and most tools assume English literacy and a form-filling mindset. Existing infrastructure such as eRaktKosh lists blood centres and stock; RaktDoot complements it with **coordination**: it does not replace it.
 
 ## Solution
 
@@ -23,7 +23,7 @@ When a patient needs blood urgently, families often turn fragmented listings, un
 | Coordinator Copilot (Cline SDK) | AI agent that uses our tools to brief coordinators and draft outreach. **A person approves every action.** |
 | Recognition (non-monetary) | Certificates, badges and a donor journey. Token rewards stay **disabled** pending official guidance. |
 
-All donor coordination leads to a **licensed blood centre**. RaktSetu never facilitates person-to-person collection and never makes clinical decisions.
+All donor coordination leads to a **licensed blood centre**. RaktDoot never facilitates person-to-person collection and never makes clinical decisions.
 
 ## Who uses it
 

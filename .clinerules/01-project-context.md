@@ -1,6 +1,6 @@
 # Project context
 
-- Product: **RaktSetu**, a WhatsApp-first blood access coordination platform for India.
+- Product: **RaktDoot**, a WhatsApp-first blood access coordination platform for India.
 - Hackathon: Cline AI Builder Hackathon Round 2. 8-hour build. Deliverables: public GitHub repo + README, PPT, demo video (mandatory), social post.
 - Primary channel: WhatsApp Cloud API. Secondary: installable mobile web app (PWA). Staff use a responsive dashboard.
 - Read `docs/ROADMAP.md`, `docs/PIPELINES.md` and `docs/USER_ROLES.md` before starting any feature.
