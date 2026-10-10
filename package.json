@@ -1,0 +1,18 @@
+{
+  "name": "raktsetu",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WhatsApp-first blood access coordination platform for India (Cline AI Builder Hackathon).",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "test": "node --test \"packages/shared/tests/*.test.ts\"",
+    "typecheck": "echo Typecheck is added with the TypeScript toolchain during the coding phase."
+  },
+  "license": "MIT"
+}
