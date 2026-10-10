@@ -66,8 +66,43 @@ export interface ExtractedRequest {
 
 // ---------- Member 2: core API shapes ----------
 
+/** Confirmed intake only. Identity, verification and status are server-owned. */
+export interface CreateBloodRequestInput {
+  hospitalId: string;
+  bloodGroup: BloodGroup;
+  component: Exclude<BloodComponent, "UNKNOWN">;
+  units: number;
+  neededBy: string;
+  language: LanguageCode;
+  confirmed: true;
+}
+
+export interface ApiErrorDTO {
+  error: { code: string; message: string; fields?: Record<string, string> };
+}
+
+export interface HospitalDTO {
+  id: string;
+  name: string;
+  district: string;
+  isSimulated: boolean;
+}
+
+export interface RequestEventDTO {
+  id: string;
+  fromStatus: RequestStatus | null;
+  toStatus: RequestStatus;
+  createdAt: string;
+}
+
+export interface BloodRequestDetailDTO {
+  request: BloodRequestDTO;
+  events: RequestEventDTO[];
+}
+
 export interface BloodRequestDTO {
   id: string;
+  isSimulated?: boolean;
   status: RequestStatus;
   verification: VerificationStatus;
   outcome: FinalOutcome | null;
@@ -85,6 +120,8 @@ export interface CentreResultDTO {
   centreId: string;
   name: string;
   phone: string;
+  /** Present for the core API. Fictional centres must never appear to be real listings. */
+  isSimulated?: boolean;
   distanceKm: number;
   stock: {
     units: number;

@@ -1,0 +1,2 @@
+# Do not switch providers without generating and testing provider-specific migrations.
+provider = "sqlite"

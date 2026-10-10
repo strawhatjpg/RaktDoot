@@ -5,14 +5,28 @@
   "description": "WhatsApp-first blood access coordination platform for India (Cline AI Builder Hackathon).",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "engines": {
     "node": ">=22.18.0"
   },
   "scripts": {
     "test": "node --test \"packages/shared/tests/*.test.ts\"",
-    "typecheck": "echo Typecheck is added with the TypeScript toolchain during the coding phase."
+    "test:integration": "npm run test:integration --workspace @raktdoot/web",
+    "test:smoke": "npm run test:smoke --workspace @raktdoot/web",
+    "dev": "npm run dev --workspace @raktdoot/web",
+    "build": "npm run build --workspace @raktdoot/web",
+    "start": "npm run start --workspace @raktdoot/web",
+    "db:generate": "npm run db:generate --workspace @raktdoot/web",
+    "db:migrate": "npm run db:migrate --workspace @raktdoot/web",
+    "db:seed": "npm run db:seed --workspace @raktdoot/web",
+    "demo:session": "npm run demo:session --workspace @raktdoot/web --",
+    "typecheck": "tsc -p packages/shared/tsconfig.json && npm run typecheck --workspace @raktdoot/web"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "~5.9.3"
   },
   "license": "MIT"
 }
