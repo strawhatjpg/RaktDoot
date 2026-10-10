@@ -4,6 +4,7 @@ import type { CaseEventDTO, CopilotDataSource } from "@raktdoot/copilot";
 import { canAccessHospitalCases, type ActorContext, type BloodRequestDTO, type MatchCandidateDTO } from "@raktdoot/shared";
 import { discoverCentres } from "../centres/discovery.ts";
 import { getDb } from "../db.ts";
+import { previewMatches } from "../outreach/service.ts";
 
 const OPEN_LIMIT = 50;
 
@@ -72,10 +73,13 @@ export function createDbDataSource(actor: ActorContext): CopilotDataSource {
       return (await discoverCentres(params)).centres;
     },
 
-    async rankDonors(): Promise<MatchCandidateDTO[]> {
-      // M2's matching runtime is not built yet. Returning nothing is safer than an
-      // unreviewed ranking; the tool tells the coordinator that matching is pending.
-      return [];
+    async rankDonors(requestId, limit): Promise<MatchCandidateDTO[]> {
+      // M2's explainable matching, scoped to this staff member. Unverified requests
+      // are ranked for preview only; outreach still requires verification.
+      const row = await readable(requestId);
+      if (!row) return [];
+      const { candidates } = await previewMatches(actor, requestId, 1);
+      return candidates.slice(0, Math.max(0, Math.min(limit, 20)));
     },
 
     async getCaseEvents(requestId): Promise<CaseEventDTO[]> {

@@ -10,12 +10,18 @@ function dto(row: RequestWithHospital): BloodRequestDTO {
   return { id: row.id, isSimulated: row.isSimulated, status: row.status, verification: row.verification, outcome: row.outcome, hospitalId: row.hospitalId, hospitalName: row.hospital.name, bloodGroup: row.bloodGroup as BloodRequestDTO["bloodGroup"], component: row.component, units: row.units, neededBy: row.neededBy.toISOString(), language: row.language as BloodRequestDTO["language"], createdAt: row.createdAt.toISOString() };
 }
 
-export async function createBloodRequest(actor: ActorContext, body: unknown, key: unknown): Promise<{ request: BloodRequestDTO; replayed: boolean }> {
+/**
+ * `allowUnknownComponent` is set only by the WhatsApp adapter: a family that tapped
+ * "Not sure" still gets centre discovery; outreach stays blocked until staff confirm it.
+ */
+export async function createBloodRequest(actor: ActorContext, body: unknown, key: unknown, options: { allowUnknownComponent?: boolean } = {}): Promise<{ request: BloodRequestDTO; replayed: boolean }> {
   if (!isValidIdempotencyKey(key)) throw new ApiError(400, "INVALID_IDEMPOTENCY_KEY", "Provide an Idempotency-Key of 8–128 safe characters");
+  const unknownComponent = options.allowUnknownComponent === true && typeof body === "object" && body !== null && (body as { component?: unknown }).component === "UNKNOWN";
+  if (unknownComponent) body = { ...(body as object), component: "WHOLE_BLOOD" };
   // Replays remain valid after their deadline; all new requests are validated against now below.
   const structural = validateCreateBloodRequest(body, new Date(0));
   if (!structural.ok) throw new ApiError(400, "VALIDATION_ERROR", "Check the request fields", structural.fields);
-  const payload = structural.value;
+  const payload = unknownComponent ? { ...structural.value, component: "UNKNOWN" as const } : structural.value;
   const payloadHash = createHash("sha256").update(JSON.stringify(payload)).digest("hex");
   const db = getDb();
   const unique = { requesterId_idempotencyKey: { requesterId: actor.userId, idempotencyKey: key } };
@@ -27,7 +33,7 @@ export async function createBloodRequest(actor: ActorContext, body: unknown, key
   };
   const existing = await replay();
   if (existing) return existing;
-  const validated = validateCreateBloodRequest(payload);
+  const validated = validateCreateBloodRequest(unknownComponent ? { ...payload, component: "WHOLE_BLOOD" } : payload);
   if (!validated.ok) throw new ApiError(400, "VALIDATION_ERROR", "Check the request fields", validated.fields);
   const hospital = await db.hospital.findUnique({ where: { id: payload.hospitalId } });
   if (!hospital) throw new ApiError(400, "UNKNOWN_HOSPITAL", "Select a listed hospital");

@@ -1,6 +1,9 @@
-// Demo sign-in for seeded, simulated accounts only. Same guard as M2's demo-session CLI:
-// DEMO_MODE=true and never in production. Real users sign in with WhatsApp.
-import { demoModeEnabled, sessionResponse } from "../../../../server/auth/login.ts";
+/**
+ * Demo sign-in (development only): sign in as a seeded FICTIONAL account so the
+ * staff side of the demo works without real staff accounts. Refused in production
+ * and unless DEMO_MODE=true. Only isSimulated users can be chosen.
+ */
+import { createSession, sessionCookie } from "../../../../server/auth/session.ts";
 import { getDb } from "../../../../server/db.ts";
 import { ApiError, apiError, json, readJson } from "../../../../server/http.ts";
 
@@ -12,23 +15,24 @@ const DEMO_ACCOUNTS = [
   { id: "demo-donor-1", label: "Donor", description: "Consent, availability and location" },
   { id: "demo-coordinator", label: "Coordinator", description: "Briefing, forecast and Copilot" },
   { id: "demo-hospital-staff", label: "Hospital staff", description: "Verified hospital requests" },
+  { id: "demo-centre-staff", label: "Blood centre staff", description: "Blood centre staff demo" },
 ] as const;
 
 export async function GET(): Promise<Response> {
-  return json({ enabled: demoModeEnabled(), accounts: demoModeEnabled() ? DEMO_ACCOUNTS : [] });
+  const enabled = process.env.DEMO_MODE === "true" && process.env.NODE_ENV !== "production";
+  return json({ enabled, accounts: enabled ? DEMO_ACCOUNTS : [] });
 }
 
 export async function POST(request: Request): Promise<Response> {
   try {
-    if (!demoModeEnabled()) throw new ApiError(404, "NOT_FOUND", "Demo sign-in is disabled");
+    if (process.env.DEMO_MODE !== "true" || process.env.NODE_ENV === "production") throw new ApiError(404, "NOT_FOUND", "Not found");
     const origin = request.headers.get("origin");
-    const configured = process.env.APP_BASE_URL;
-    if (!configured || origin !== new URL(configured).origin) throw new ApiError(403, "INVALID_ORIGIN", "A same-origin request is required");
-    const body = (await readJson(request)) as { userId?: unknown } | null;
-    const userId = typeof body?.userId === "string" ? body.userId : "";
-    if (!DEMO_ACCOUNTS.some((a) => a.id === userId)) throw new ApiError(400, "VALIDATION_ERROR", "Choose a demo account");
+    if (!process.env.APP_BASE_URL || origin !== new URL(process.env.APP_BASE_URL).origin) throw new ApiError(403, "INVALID_ORIGIN", "A same-origin request is required");
+    const userId = (await readJson(request) as { userId?: unknown } | null)?.userId;
+    if (typeof userId !== "string" || !DEMO_ACCOUNTS.some((account) => account.id === userId)) throw new ApiError(400, "VALIDATION_ERROR", "Choose a demo account");
     const user = await getDb().user.findUnique({ where: { id: userId } });
-    if (!user?.isSimulated) throw new ApiError(404, "NOT_FOUND", "Seed the demo data first (npm run db:seed)");
-    return sessionResponse(user.id, { ok: true });
+    if (!user?.isSimulated) throw new ApiError(404, "NOT_FOUND", "Run the demo seed first");
+    const session = await createSession(user.id);
+    return new Response(JSON.stringify({ signedIn: true }), { status: 200, headers: { "Content-Type": "application/json", "Cache-Control": "no-store", "Set-Cookie": sessionCookie(session.token, session.expiresAt) } });
   } catch (error) { return apiError(error); }
 }

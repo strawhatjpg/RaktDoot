@@ -7,6 +7,7 @@ import type { Prisma } from "@prisma/client";
 import { getDb } from "../db.ts";
 import { ApiError } from "../http.ts";
 import { loadConsents } from "../consent/service.ts";
+import { rewardReferredDonorRegistered } from "../rewards/service.ts";
 
 type ProfileRow = Prisma.DonorProfileGetPayload<{ include: { location: true } }>;
 
@@ -57,6 +58,7 @@ export async function upsertDonorProfile(actor: ActorContext, body: unknown): Pr
       include: { location: true },
     });
     await tx.auditLog.create({ data: { actorId: actor.userId, action: existing ? "DONOR_PROFILE_UPDATED" : "DONOR_REGISTERED", entity: "DonorProfile", entityId: actor.userId } });
+    if (!existing) await rewardReferredDonorRegistered(tx, actor.userId);
     return { profile: toDto(row), created: !existing };
   });
 }

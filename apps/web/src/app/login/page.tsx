@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { DemoAccounts } from "../../components/DemoAccounts.tsx";
 import { Brand, Drop } from "../../components/Drop.tsx";
-import { IconArrow, IconWhatsApp } from "../../components/icons.tsx";
+import { IconWhatsApp } from "../../components/icons.tsx";
 import { useSession } from "../../components/Session.tsx";
 import { useToast } from "../../components/Toast.tsx";
 import { api, ApiFailure, isStaff } from "../../lib/api.ts";
 
-type Code = { code: string; link: string | null; expiresAt: string; botConfigured: boolean };
+type Code = { code: string; link: string; expiresAt: string };
 
 function LoginInner() {
   const router = useRouter();
@@ -80,14 +80,7 @@ function LoginInner() {
               <span className="chip chip-teal"><span className="dot dot-live" /> Waiting for your WhatsApp message</span>
               <div className="mono" style={{ fontSize: 40, fontWeight: 800, letterSpacing: "0.25em" }}>{code.code}</div>
               <p className="muted small" style={{ margin: 0 }}>Send <span className="kbd">LOGIN {code.code}</span> to the RaktDoot bot. Single use, expires in 5 minutes.</p>
-              {code.link ? (
-                <a href={code.link} target="_blank" rel="noreferrer" className="btn btn-wa btn-block"><IconWhatsApp width={20} /> Open WhatsApp</a>
-              ) : (
-                <Link href={`/simulator?text=${encodeURIComponent(`LOGIN ${code.code}`)}`} target="_blank" className="btn btn-ghost btn-block">
-                  Send it from the WhatsApp simulator <IconArrow width={16} />
-                </Link>
-              )}
-              {!code.botConfigured && <p className="tiny faint" style={{ margin: 0 }}>No WhatsApp number is configured on this server, so use the simulator. It runs the same bot.</p>}
+              <a href={code.link} target="_blank" rel="noreferrer" className="btn btn-wa btn-block"><IconWhatsApp width={20} /> Open WhatsApp</a>
             </div>
           )}
         </section>

@@ -43,8 +43,8 @@ export const api = {
   logout: () => call<{ ok: true }>("/api/auth/logout", { method: "POST" }),
   demoAccounts: () => call<{ enabled: boolean; accounts: DemoAccount[] }>("/api/auth/demo"),
   demoLogin: (userId: string) => call<{ ok: true }>("/api/auth/demo", post({ userId })),
-  waStart: () => call<{ code: string; link: string | null; expiresAt: string; botConfigured: boolean }>("/api/auth/whatsapp/start", { method: "POST" }),
-  waPoll: (code: string) => call<{ status: "pending" | "confirmed" | "expired" }>(`/api/auth/whatsapp/poll?code=${code}`),
+  waStart: () => call<{ code: string; link: string; expiresAt: string }>("/api/auth/whatsapp/start", { method: "POST" }),
+  waPoll: (code: string) => call<{ status: "pending" | "confirmed" | "expired" }>("/api/auth/whatsapp/poll", post({ code })),
 
   // Requests + discovery (M2)
   hospitals: () => call<{ hospitals: HospitalDTO[] }>("/api/centres").then((r) => r.hospitals),
