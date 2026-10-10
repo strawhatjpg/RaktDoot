@@ -28,30 +28,23 @@ npm run evals:ai         # with Gemini/Groq → evals/multilingual/results.md
 
 ## Integration for Member 2 (`apps/web`)
 
-1. Add `"@raktdoot/bot": "0.1.0"` to `apps/web/package.json` dependencies.
-2. Implement `CoreApi` with Prisma (state can be a JSON column on `User`), pass it to `createBotFromEnv(process.env, { core })`.
-3. Routes:
+**Done (M1):** `@raktdoot/bot` is a dependency of `apps/web` and in `transpilePackages`. Routes:
 
-```ts
-// app/api/whatsapp/webhook/route.ts
-import { after } from "next/server";
-import { handleVerify, handleWebhook } from "@raktdoot/bot";
-export async function GET(req: Request) {
-  const r = handleVerify(new URL(req.url), process.env.WHATSAPP_VERIFY_TOKEN!);
-  return new Response(r.body, { status: r.status });
-}
-export async function POST(req: Request) {
-  const raw = await req.text();
-  const r = handleWebhook(raw, req.headers.get("x-hub-signature-256"), { bot, client: client!, appSecret: process.env.WHATSAPP_APP_SECRET!, verifyToken: process.env.WHATSAPP_VERIFY_TOKEN! });
-  after(r.done);              // reply 200 fast, process in background
-  return new Response(null, { status: r.status });
-}
-// app/api/simulator/route.ts  →  simulate(await req.json(), bot)  → JSON replies (M4's page)
-// app/api/auth/whatsapp/{start,poll}  →  login.start(WHATSAPP_BOT_NUMBER) / login.poll(code)
-```
+| Route | Purpose | Without keys |
+|---|---|---|
+| `GET/POST /api/whatsapp/webhook` | Meta handshake + signed messages; replies sent after the 200 | GET works; POST → 503 |
+| `POST /api/simulator` | `{ from, text \| buttonId \| location }` → `{ replies }` for M4's `/simulator` page | Works (on in dev; prod needs `SIMULATOR_ENABLED=true`) |
+| `POST /api/auth/whatsapp/start` | → `{ code, link, expiresAt }` + HttpOnly cookie binding the code to this browser | 503 until `WHATSAPP_BOT_NUMBER` is set |
+| `POST /api/auth/whatsapp/poll` | `{ code }` → `pending` / `expired` / `confirmed` + M2 session cookie (`createSession`) | Works |
 
-4. Donor alerts from outreach waves: send `kind: "buttons"` with button ids `invite:<inviteId>:accept|decline|pause`;
-   the bot forwards taps to `core.respondToInvite`.
+Wiring lives in `apps/web/src/server/bot/` (bot singleton, login-code browser binding, phone → user upsert; new users are always `REQUESTER`).
+
+**Still open (M2):** implement `CoreApi` with Prisma and pass it in `apps/web/src/server/bot/index.ts` via
+`createBotFromEnv(process.env, { core, loginStore })`. Until then the bot uses its in-memory mock (state resets on restart,
+requests are not written to the DB). Mapping notes are in `docs/M2_HANDOFF.md`.
+
+Donor alerts from outreach waves: send `kind: "buttons"` with button ids `invite:<inviteId>:accept|decline|pause`;
+the bot forwards taps to `core.respondToInvite`.
 
 ## Known limits
 
