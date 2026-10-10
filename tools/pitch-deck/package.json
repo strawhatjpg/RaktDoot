@@ -1,0 +1,14 @@
+{
+  "name": "raktdoot-pitch-deck",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generates the RaktDoot pitch deck (docs/RaktDoot_Pitch_Deck.pptx).",
+  "type": "module",
+  "scripts": {
+    "build": "node build-deck.mjs"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  },
+  "license": "MIT"
+}
