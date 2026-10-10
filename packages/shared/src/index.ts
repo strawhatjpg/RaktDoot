@@ -7,3 +7,4 @@ export * from "./contracts.ts";
 export * from "./validation.ts";
 export * from "./access.ts";
 export * from "./donor.ts";
+export * from "./matching.ts";

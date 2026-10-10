@@ -91,6 +91,39 @@ Migration `202610100002_donor_last_donation_source` adds a nullable column only.
 Staff verification queue, matching, waves, request-scoped contact sharing,
 reminders, recognition, and data deletion.
 
+> **Update — milestones 3–9 are now built.** See "Milestones 3–9" below.
+
+## Milestones 3–9 — bot integration, OAuth, verification, matching, waves, closed loop
+
+Migration `202610100003_outreach_auth_fulfilment` adds `User.email`, `OAuthAccount`,
+`BotConversation`, `OutreachWave`, `OutreachInvite`, `Notification` (durable outbox),
+`FulfilmentRecord`, `RecognitionAward`, `ReminderLog`, plus `BloodRequest.verifiedById /
+verifiedAt / acceptedCount` and `RequestEvent.kind / note`. SQLite rebuilds the two
+altered tables (Prisma's standard approach; data is copied).
+
+| Milestone | What exists | Key files |
+|---|---|---|
+| M3 bot ↔ backend | `createPrismaCoreApi` replaces M1's mock: conversation state in DB, WhatsApp consents via `updateConsents`, donor sign-up, location pins (held until consent/profile exist), hospital-name resolution, idempotent requests, invite replies, STATUS, DELETE MY DATA. `BOT_CORE=mock` restores the mock. | `src/server/bot/core-adapter.ts`, `src/server/bot/index.ts` |
+| Google OAuth | Authorization-code flow + PKCE S256 + `state` cookie; links by Google `sub`, then verified email; always REQUESTER. Plus `GET/DELETE /api/auth/session` and dev-only demo sign-in. | `src/server/auth/oauth.ts`, `src/app/api/auth/{google,session,demo}` |
+| M4 verification | Scoped queue + verify/reject with method, verifier and time recorded | `GET /api/verification`, `POST /api/requests/{id}/verify` |
+| M5 matching | Pure, explained ranking: exact group, WhatsApp alert consent, effective availability, fresh location (≤90 days), radius, donation interval, not committed/invited, not the requester. ETA weight folded into distance (ETA unknown before acceptance). | `packages/shared/src/matching.ts`, `GET /api/requests/{id}/matches` |
+| M6 waves | 5 donors/10 km → 10/25 km → 15/50 km; WhatsApp buttons Accept / Ignore / Pause alerts; atomic slot claim (`acceptedCount < units`); request-scoped CONTACT_SHARING on accept; stand-down when full or closed; expiry by worker | `src/server/outreach/service.ts`, `POST /api/requests/{id}/outreach` |
+| M7 closed loop | ARRIVED / DONATED / DEFERRED / NO_SHOW per donor; units issued recorded separately; FULFILLED requires issued ≥ requested; requesters may only cancel | `POST /api/invites/{id}/outcome`, `/fulfilment`, `/close` |
+| M8 notifications + reminders | Durable outbox with dedupe keys, conditional claim, 3 retries; real WhatsApp send when configured, otherwise SIMULATED; fictional donors always SIMULATED; reminders once per due date with consent re-checked | `src/server/notifications/`, `src/server/reminders/service.ts`, `scripts/worker.ts` |
+| M9 recognition + deletion | One certificate per confirmed donation (unique per invite); DELETE MY DATA erases identity, consent, location, sessions, OAuth links | `outreach/service.ts`, `bot/core-adapter.ts` |
+| Copilot (M3 hand-off) | `rankDonors` now returns real scoped matches; approving a DONOR_OUTREACH draft starts a real wave as the approving coordinator | `src/server/copilot/{data-source,index}.ts` |
+| UI for the demo | `/`, `/login`, `/request`, `/track/{id}`, `/donor`, `/dashboard`, `/demo` (WhatsApp inbox), `/terms` | `src/app/**/page.tsx` |
+
+Validation: 91 unit tests, 39 integration tests (incl. concurrent accepts, STOP,
+rejection, retries, reminders, deletion, OAuth), typecheck, production build, HTTP smoke,
+and `npm run test:demo` (the full demo story over HTTP) all pass. See `docs/DEMO.md`.
+
+Known limits: the bot's location-request flow cannot tell a typed area from a pin
+with lat/lng 0,0 (M1 sends `{lat:0,lng:0}` for typed areas); the adapter treats 0,0 as
+"typed area" and resolves it against seeded hospital names only, so typed areas outside
+the directory are labelled but not stored as coordinates. Donation campaigns from the
+Copilot are recorded but not sent (they need their own consent purpose).
+
 ## Merge notes for `main` (checked against origin branches on 2026-10-10)
 
 `m2-core` merges cleanly with `main`. Against `m1-bot-ai` (b3ef86a) and

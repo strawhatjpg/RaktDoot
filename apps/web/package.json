@@ -12,8 +12,10 @@
     "db:migrate": "node --env-file-if-exists=../../.env ../../node_modules/prisma/build/index.js migrate deploy",
     "db:seed": "node --env-file-if-exists=../../.env prisma/seed.ts",
     "demo:session": "node --env-file-if-exists=../../.env scripts/demo-session.ts",
+    "worker": "node --env-file-if-exists=../../.env scripts/worker.ts",
     "test:integration": "node scripts/test-integration.mjs",
-    "test:smoke": "node scripts/smoke.mjs"
+    "test:smoke": "node scripts/smoke.mjs",
+    "test:demo": "node scripts/demo-e2e.mjs"
   },
   "dependencies": {
     "@prisma/client": "~6.19.0",
